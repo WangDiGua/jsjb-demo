@@ -1,0 +1,56 @@
+# 复制为实际 nginx 站点配置并调整 root / server_name。
+# 大模型代理须与前端环境变量一致：
+#   VITE_GLM_PROXY_TARGET  → proxy_pass 的协议+主机
+#   VITE_GLM_PROXY_PREFIX  → proxy_pass 的路径前缀（末尾保留 /）
+
+server {
+    listen       80;
+    listen  [::]:80;
+    server_name  localhost;
+    charset utf-8;
+
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+
+    location / {
+        root   /usr/share/nginx/html;
+        index  index.html index.htm;
+        try_files $uri $uri/ /index.html;
+        expires 1h;
+    }
+
+    # 当前默认：阿里云 DashScope OpenAI 兼容
+    # 对应 VITE_GLM_PROXY_TARGET=https://dashscope.aliyuncs.com
+    #      VITE_GLM_PROXY_PREFIX=/compatible-mode/v1
+    location /glm-api/ {
+        proxy_pass https://dashscope.aliyuncs.com/compatible-mode/v1/;
+        proxy_ssl_server_name on;
+        proxy_set_header Host dashscope.aliyuncs.com;
+        proxy_set_header Authorization $http_authorization;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_pass_request_headers on;
+        proxy_http_version 1.1;
+        proxy_buffering off;
+    }
+
+    # —— 若改用 Moonshot Kimi，请注释上一段 location /glm-api/，启用下面这段：——
+    # location /glm-api/ {
+    #     proxy_pass https://api.moonshot.cn/v1/;
+    #     proxy_ssl_server_name on;
+    #     proxy_set_header Host api.moonshot.cn;
+    #     proxy_set_header Authorization $http_authorization;
+    #     proxy_set_header X-Real-IP $remote_addr;
+    #     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    #     proxy_set_header X-Forwarded-Proto $scheme;
+    #     proxy_pass_request_headers on;
+    #     proxy_http_version 1.1;
+    #     proxy_buffering off;
+    # }
+
+    error_page   500 502 503 504  /50x.html;
+    location = /50x.html {
+        root   /usr/share/nginx/html;
+    }
+}

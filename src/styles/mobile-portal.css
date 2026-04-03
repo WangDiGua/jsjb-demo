@@ -1,0 +1,97 @@
+/**
+ * 门户移动端（Civic Clarity）：原 HTML 示例中的工具类
+ *
+ * iPhone 安全区：MobileLayout 在滚动区外注入 padding-top（需 index.html viewport-fit=cover）。
+ * 真实机依赖 env(safe-area-inset-top)；嵌套 iframe 内 env 常为 0，布局内对顶栏有 max(..., 3.5rem) 回退。
+ * 子页 MobileSubPageScaffold 勿再叠加顶部 safe-area，否则会双重留白；左右仍用 env(safe-area-inset-left/right)。
+ */
+.m-portal-hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.m-portal-hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* 主滚动区：与全局隐藏滚动条叠加，避免部分内核仍显示轨道 */
+.m-portal-scroll-y {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.m-portal-scroll-y::-webkit-scrollbar {
+  display: none;
+}
+
+.m-portal-tap-clear {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.m-portal-signature-gradient {
+  background: linear-gradient(135deg, 
+    rgb(var(--tw-color-primary) / 1) 0%, 
+    rgb(var(--tw-primary-container) / 1) 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.m-portal-signature-gradient::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 2px 2px, 
+    rgb(var(--tw-on-primary) / 0.1) 1px, 
+    transparent 0);
+  background-size: 24px 24px;
+  pointer-events: none;
+}
+
+.dark .m-portal-signature-gradient {
+  background: linear-gradient(135deg, 
+    rgb(var(--tw-color-primary) / 1) 0%, 
+    rgb(var(--tw-primary-container) / 1) 100%);
+}
+
+.m-portal-glass-header {
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  background: rgb(var(--tw-surface-container-lowest) / 0.8);
+  border-bottom: 1px solid rgb(var(--tw-color-outline-variant) / 0.2);
+}
+
+.m-portal-card-shadow {
+  box-shadow: 0 8px 24px rgba(0, 71, 144, 0.04);
+}
+
+.m-portal-card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.m-portal-card-hover:active {
+  transform: scale(0.98);
+}
+
+.m-portal-bottom-nav {
+  box-shadow: 0 -4px 16px rgba(0, 71, 144, 0.06);
+}
+
+/**
+ * 移动端壳内：去掉未设样式时的系统按钮外观（粗边框、立体浮雕），
+ * 各组件再按需写圆角/底色/阴影。
+ */
+body.jsjb-mobile-shell .portal-mobile button {
+  -webkit-appearance: none;
+  appearance: none;
+  border: 0 solid transparent;
+  font: inherit;
+}
+
+body.jsjb-mobile-shell .portal-mobile input[type='search'] {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* 底栏：焦点环不抢视觉 */
+body.jsjb-mobile-shell .portal-mobile .m-mobile-tab:focus-visible {
+  outline: 2px solid rgb(var(--tw-color-primary) / 0.45);
+  outline-offset: 2px;
+}

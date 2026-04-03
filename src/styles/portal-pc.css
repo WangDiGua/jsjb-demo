@@ -1,0 +1,196 @@
+/* 门户 PC 示例 — glass、网格底纹、科技路径动效 */
+
+.portal-pc .material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.portal-pc .smart-grid-bg {
+  background-image: 
+    linear-gradient(to right, rgba(0, 82, 204, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 82, 204, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.portal-pc .tech-path {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: portal-dash 10s linear infinite;
+}
+
+@keyframes portal-dash {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.portal-pc .glass-panel {
+  background: rgb(var(--tw-surface-container-lowest) / 0.75);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgb(var(--tw-color-outline-variant) / 0.4);
+  box-shadow: 
+    0 4px 24px rgba(0, 0, 0, 0.06),
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgb(var(--tw-surface-container-lowest) / 0.6);
+  color: rgb(var(--tw-color-on-surface) / 1);
+}
+
+.portal-pc .signature-gradient {
+  background: linear-gradient(135deg, 
+    rgb(var(--tw-color-primary) / 1) 0%, 
+    rgb(var(--tw-primary-container) / 1) 100%);
+}
+
+.portal-pc .custom-shadow {
+  box-shadow: 0 12px 32px -4px rgba(0, 71, 144, 0.06);
+}
+
+.portal-pc .hover-lift {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.portal-pc .hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 48px -8px rgba(0, 71, 144, 0.12);
+}
+
+/* --- portal-skin：关闭全局 preflight 时，在用户 PC 范围内统一原生 button/select 基底 --- */
+.portal-skin .material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.portal-skin button {
+  appearance: none;
+  border: 0 solid transparent;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.portal-skin button:disabled {
+  cursor: not-allowed;
+}
+
+.portal-skin button:focus-visible {
+  outline: 2px solid #0052cc;
+  outline-offset: 2px;
+}
+
+.portal-skin select.portal-select {
+  appearance: none;
+  -webkit-appearance: none;
+  box-sizing: border-box;
+  min-height: 2.625rem;
+  border: 1px solid rgba(220, 223, 228, 0.35);
+  border-radius: 1rem;
+  background-color: #fff;
+  padding: 0.5rem 2.5rem 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25;
+  color: #172b4d;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%2344546F' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.65rem center;
+  background-size: 1.25rem;
+}
+
+.portal-skin select.portal-select:focus {
+  outline: none;
+  border-color: #0052cc;
+  box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.2);
+}
+
+.portal-skin select.portal-select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* --- PortalSelect：Ant Design Select，自定义圆角下拉（替代原生 option 面板） --- */
+.portal-select-antd.ant-select {
+  width: 100%;
+}
+
+.portal-select-antd.ant-select .ant-select-selector {
+  min-height: 2.625rem !important;
+  padding: 0.375rem 0.875rem !important;
+  border-radius: 1rem !important;
+  border: 1px solid rgb(var(--tw-color-outline-variant) / 0.55) !important;
+  background: rgb(var(--tw-surface-container-lowest) / 1) !important;
+  box-shadow: none !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.portal-select-antd.ant-select-single .ant-select-selector .ant-select-selection-item {
+  line-height: 1.75rem !important;
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: rgb(var(--tw-color-on-surface) / 1);
+}
+
+.portal-select-antd.ant-select .ant-select-selection-placeholder {
+  color: rgb(var(--tw-color-on-surface-variant) / 0.82) !important;
+  font-weight: 500;
+}
+
+.portal-select-antd.ant-select:not(.ant-select-disabled):hover .ant-select-selector {
+  border-color: rgb(var(--tw-color-primary) / 0.45) !important;
+}
+
+.portal-select-antd.ant-select-focused.ant-select:not(.ant-select-disabled) .ant-select-selector,
+.portal-select-antd.ant-select-open .ant-select-selector {
+  border-color: rgb(var(--tw-color-primary) / 1) !important;
+  box-shadow: 0 0 0 3px rgb(var(--tw-color-primary) / 0.2) !important;
+}
+
+.portal-select-antd.ant-select-disabled .ant-select-selector {
+  opacity: 0.55;
+}
+
+.portal-select-antd .ant-select-arrow {
+  color: rgb(var(--tw-color-on-surface-variant) / 0.85);
+}
+
+.portal-select-dropdown.ant-select-dropdown {
+  padding: 6px !important;
+  border-radius: 1rem !important;
+  box-shadow: 0 12px 40px rgba(15, 35, 52, 0.14), 0 4px 14px rgba(0, 71, 144, 0.08) !important;
+  border: 1px solid rgb(var(--tw-color-outline-variant) / 0.55) !important;
+  overflow: hidden;
+  background: rgb(var(--tw-surface-container-lowest) / 1) !important;
+}
+
+.portal-select-dropdown .ant-select-item {
+  border-radius: 0.625rem !important;
+  padding: 10px 14px !important;
+  min-height: 44px !important;
+  line-height: 1.45 !important;
+  font-size: 0.875rem;
+}
+
+.portal-select-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+  background: rgb(var(--tw-color-primary) / 0.12) !important;
+  color: rgb(var(--tw-color-primary) / 1) !important;
+  font-weight: 600;
+}
+
+.portal-select-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
+  background: rgb(var(--tw-color-surface-container-high) / 1) !important;
+}
+
+html.dark .portal-select-antd.ant-select .ant-select-selector {
+  background: rgba(30, 41, 59, 0.92) !important;
+  border-color: rgb(var(--tw-color-outline-variant) / 0.45) !important;
+}
+
+html.dark
+  .portal-select-dropdown
+  .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+  color: rgb(var(--tw-color-secondary-container) / 1) !important;
+}
+
+html.dark .portal-select-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
+  background: rgba(255, 255, 255, 0.06) !important;
+}

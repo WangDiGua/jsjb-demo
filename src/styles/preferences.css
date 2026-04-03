@@ -1,0 +1,88 @@
+/**
+ * 个性化：默认 CSS 变量（在 JS 应用偏好前即生效）
+ * Tailwind 语义色引用 --tw-color-*
+ */
+:root {
+  --tw-color-primary: 0 82 204;
+  --tw-color-secondary: 0 163 191;
+  --tw-color-surface: 244 245 247;
+  --tw-color-on-surface: 23 43 77;
+  --tw-color-on-surface-variant: 68 84 111;
+  --tw-color-outline-variant: 220 223 228;
+  --tw-surface-container-lowest: 255 255 255;
+  --tw-surface-container-low: 242 244 246;
+  --tw-surface-container-high: 230 232 234;
+  --tw-secondary-container: 83 156 254;
+  --tw-primary-container: 26 95 180;
+  --tw-on-primary-container: 203 220 255;
+  --tw-page-muted: 114 119 128;
+  --layout-max: 1600px;
+  --layout-px: 2rem;
+  --layout-py-main: 2.5rem;
+  --layout-py-section: 4rem;
+}
+
+/* 页面切换动画（由 data-page-transition 驱动，或由类名） */
+.jsjb-page-outlet {
+  min-height: 2rem;
+}
+
+.jsjb-page-outlet--fade {
+  animation: jsjb-page-fade 0.28s ease-out both;
+}
+
+.jsjb-page-outlet--slide {
+  animation: jsjb-page-slide 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.jsjb-page-outlet--none {
+  animation: none;
+}
+
+@keyframes jsjb-page-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes jsjb-page-slide {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* body 与语义色一致（明暗由 html.dark + --tw-color-* 驱动） */
+body {
+  background-color: rgb(var(--tw-color-surface) / 1);
+  color: rgb(var(--tw-color-on-surface) / 1);
+}
+
+html.dark body {
+  background-color: rgb(var(--tw-color-surface) / 1);
+  color: rgb(var(--tw-color-on-surface) / 1);
+}
+
+html.dark body.jsjb-mobile-shell {
+  background-color: rgb(var(--tw-color-surface) / 1);
+}
+
+/* 个性化弹窗：暗色下说明文字与分割线对比度 */
+html.dark .jsjb-preferences-modal .ant-typography-secondary {
+  color: rgb(148 163 184) !important;
+}
+
+html.dark .jsjb-preferences-modal .ant-form-item-label > label {
+  color: rgb(226 232 240);
+}
+
+html.dark .jsjb-preferences-modal .ant-divider {
+  border-color: rgb(71 85 105 / 0.85);
+}

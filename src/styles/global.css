@@ -1,0 +1,169 @@
+:root {
+  --jsjb-font-display: 'Fraunces', 'Times New Roman', serif;
+  --jsjb-font-body: 'IBM Plex Sans', system-ui, sans-serif;
+  --jsjb-ink: #0f2338;
+  --jsjb-accent: #0052cc;
+  --jsjb-accent-soft: #7ec8ff;
+  --jsjb-surface: #f8fafc;
+  --jsjb-bg-elevated: #eef2f6;
+  --jsjb-text: #0f2338;
+  --jsjb-text-muted: #5c6b7a;
+  --jsjb-shadow-card: 0 12px 40px rgba(15, 35, 52, 0.12);
+  --primary-color: #0052cc;
+  --success-color: #2a9d7a;
+  --warning-color: #e9a23b;
+  --error-color: #c94c4c;
+  --text-color: #0f2338;
+  --text-color-secondary: #5c6b7a;
+  --border-color: #c5d2df;
+  --bg-color: #eef2f6;
+  --card-bg: #ffffff;
+  --border-radius: 10px;
+  --shadow: var(--jsjb-shadow-card);
+  --shadow-hover: 0 16px 48px rgba(15, 35, 52, 0.14);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  /* 隐藏滚动条，仍可通过滚轮/触屏/键盘滚动（三端共用） */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+}
+
+body {
+  font-family: var(--jsjb-font-body);
+  line-height: 1.55;
+  /* 背景与正文字色由 preferences.css + 个性化变量统一控制 */
+}
+
+body.jsjb-mobile-shell {
+  background: var(--jsjb-bg-elevated);
+}
+
+h1, h2, h3, .logo-text {
+  font-family: var(--jsjb-font-display);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+a {
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+a:hover {
+  color: #4096ff;
+}
+
+.page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.page-header {
+  margin-bottom: 24px;
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.page-subtitle {
+  color: var(--text-color-secondary);
+  font-size: 14px;
+}
+
+.card {
+  background: var(--card-bg);
+  border-radius: var(--border-radius);
+  padding: 24px;
+  box-shadow: var(--shadow);
+  transition: box-shadow 0.3s;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-hover);
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.grid {
+  display: grid;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-secondary {
+  color: var(--text-color-secondary);
+}
+
+.mt-8 { margin-top: 8px; }
+.mt-16 { margin-top: 16px; }
+.mt-24 { margin-top: 24px; }
+.mb-8 { margin-bottom: 8px; }
+.mb-16 { margin-bottom: 16px; }
+.mb-24 { margin-bottom: 24px; }
+.p-16 { padding: 16px; }
+.p-24 { padding: 24px; }
+
+@media (max-width: 768px) {
+  .page-container {
+    padding: 16px;
+  }
+
+  .page-title {
+    font-size: 20px;
+  }
+
+  .card {
+    padding: 16px;
+    border-radius: 6px;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-in {
+  animation: fadeIn 0.4s ease-out;
+}
