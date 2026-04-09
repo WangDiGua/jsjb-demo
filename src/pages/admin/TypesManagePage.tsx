@@ -16,6 +16,8 @@ export default function TypesManagePage() {
     setLoading(true);
     try {
       setTypes(await questionTypeService.getQuestionTypes());
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : '类型列表加载失败');
     } finally {
       setLoading(false);
     }
@@ -42,36 +44,44 @@ export default function TypesManagePage() {
       title: '确认删除',
       content: '确定删除该问题类型吗？',
       onOk: async () => {
-        const next = types.filter((t) => t.id !== id);
-        await questionTypeService.replaceQuestionTypes(next);
-        message.success('删除成功');
-        void reload();
+        try {
+          const next = types.filter((t) => t.id !== id);
+          await questionTypeService.replaceQuestionTypes(next);
+          message.success('删除成功');
+          void reload();
+        } catch (e) {
+          message.error(e instanceof Error ? e.message : '删除失败');
+        }
       },
     });
   };
 
   const handleSubmit = () => {
     form.validateFields().then(async (values) => {
-      const order = values.order != null ? Number(values.order) : 0;
-      if (editingType) {
-        const next = types.map((t) =>
-          t.id === editingType.id ? { ...t, ...values, order } : t,
-        );
-        await questionTypeService.replaceQuestionTypes(next);
-        message.success('修改成功');
-      } else {
-        const newType: QuestionType = {
-          id: 'type' + Date.now(),
-          name: values.name,
-          icon: values.icon,
-          count: 0,
-          order,
-        };
-        await questionTypeService.replaceQuestionTypes([...types, newType]);
-        message.success('新增成功');
+      try {
+        const order = values.order != null ? Number(values.order) : 0;
+        if (editingType) {
+          const next = types.map((t) =>
+            t.id === editingType.id ? { ...t, ...values, order } : t,
+          );
+          await questionTypeService.replaceQuestionTypes(next);
+          message.success('修改成功');
+        } else {
+          const newType: QuestionType = {
+            id: 'type' + Date.now(),
+            name: values.name,
+            icon: values.icon,
+            count: 0,
+            order,
+          };
+          await questionTypeService.replaceQuestionTypes([...types, newType]);
+          message.success('新增成功');
+        }
+        setModalVisible(false);
+        void reload();
+      } catch (e) {
+        message.error(e instanceof Error ? e.message : '保存失败');
       }
-      setModalVisible(false);
-      void reload();
     });
   };
 

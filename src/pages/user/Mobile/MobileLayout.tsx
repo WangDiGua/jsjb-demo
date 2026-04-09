@@ -4,6 +4,7 @@ import { notificationService } from '@/mock';
 import { useAppStore } from '@/store';
 import ScrollToTop from '@/components/shell/ScrollToTop';
 import PageOutletTransition from '@/components/shell/PageOutletTransition';
+import PortalFeedbackHost from '@/pages/user/PC/shell/PortalFeedbackHost';
 
 const tabs = [
   { key: '/user/home', label: '首页', icon: 'home' as const },
@@ -75,6 +76,8 @@ export default function MobileLayout() {
           </PageOutletTransition>
         </div>
       </div>
+
+      <PortalFeedbackHost />
 
       {!hideTab ? (
         <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-3 pb-[max(10px,env(safe-area-inset-bottom,0px))] pt-1">

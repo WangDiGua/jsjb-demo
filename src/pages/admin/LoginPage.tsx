@@ -34,7 +34,7 @@ export default function AdminLoginPage() {
     <div className="admin-login-page flex min-h-screen flex-col bg-surface font-body text-on-surface md:flex-row">
       <aside className="relative hidden flex-col justify-between border-b border-outline-variant bg-surface-container-low px-10 py-12 md:flex md:w-[42%] md:border-b-0 md:border-r lg:px-14">
         <div>
-          <h1 className="font-headline text-2xl font-black tracking-tight text-primary">兰途接诉即办</h1>
+          <h1 className="font-headline text-2xl font-black tracking-tight text-primary">接诉即办</h1>
           <p className="mt-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant opacity-70">
             管理终端
           </p>
@@ -57,12 +57,12 @@ export default function AdminLoginPage() {
           bordered={false}
         >
           <div className="mb-8 md:hidden">
-            <h2 className="font-headline text-xl font-black text-primary">兰途接诉即办 · 管理终端</h2>
+            <h2 className="font-headline text-xl font-black text-primary">接诉即办 · 管理终端</h2>
             <p className="mt-1 text-sm text-on-surface-variant">请使用授权账号登录</p>
           </div>
           <div className="mb-6 hidden md:block">
             <h2 className="font-headline text-xl font-bold text-on-surface">登录</h2>
-            <p className="mt-1 text-sm text-on-surface-variant">即诉即办平台管理系统</p>
+            <p className="mt-1 text-sm text-on-surface-variant">接诉即办平台管理系统</p>
           </div>
 
           <Form name="adminLogin" onFinish={handleLogin} layout="vertical" requiredMark={false}>

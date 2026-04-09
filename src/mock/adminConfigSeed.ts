@@ -1,4 +1,46 @@
-import type { AdminConfigBundle } from './adminConfigTypes';
+import type { AdminConfigBundle, SystemSettings } from './adminConfigTypes';
+
+/** 与种子默认合并，补齐缺失的 basic / timeouts / notices / ai（兼容旧版持久化） */
+export function mergePartialSystemSettings(s: SystemSettings): SystemSettings {
+  const d = seedSystemSettings();
+  return {
+    basic: { ...d.basic, ...(s.basic ?? {}) },
+    timeouts: { ...d.timeouts, ...(s.timeouts ?? {}) },
+    notices: { ...d.notices, ...(s.notices ?? {}) },
+    ai: { ...d.ai, ...(s.ai ?? {}) },
+  };
+}
+
+export function seedSystemSettings(): SystemSettings {
+  return {
+    basic: {
+      platformName: '接诉即办平台',
+      schoolName: '×××大学',
+      slogan: '便捷高效，诉求直达',
+      logoDataUrl: '',
+    },
+    timeouts: {
+      urgeTimeoutHours: 24,
+      superviseTimeoutHours: 48,
+      autoCloseDays: 7,
+      smsReminder: false,
+      emailReminder: false,
+    },
+    notices: {
+      enabled: true,
+      requireAudit: false,
+      pinTopCount: 3,
+    },
+    ai: {
+      smartDispatch: true,
+      smartRecommend: true,
+      assistWrite: true,
+      translation: true,
+      modelLabel: '',
+      dailyTokenBudget: 10000,
+    },
+  };
+}
 
 export function seedAdminConfigDefaults(): AdminConfigBundle {
   return {
@@ -148,7 +190,7 @@ export function seedAdminConfigDefaults(): AdminConfigBundle {
       },
     ],
     portalBranding: {
-      loginWelcome: '欢迎来到兰途接诉即办',
+      loginWelcome: '欢迎来到接诉即办',
       loginSubtitle: '校园共治门户 · 阳光受理',
       homeMotto: '明德至善 · 笃学敏行',
       channels:  [
@@ -158,6 +200,7 @@ export function seedAdminConfigDefaults(): AdminConfigBundle {
         { name: '微信服务号', channel: '菜单 + 模板消息' },
       ],
     },
+    systemSettings: seedSystemSettings(),
     auditLogs: [
       {
         id: 'log_seed_1',

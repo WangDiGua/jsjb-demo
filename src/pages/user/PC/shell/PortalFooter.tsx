@@ -1,20 +1,41 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { adminConfigService } from '@/mock';
 
 export default function PortalFooter() {
+  const [platformTitle, setPlatformTitle] = useState('接诉即办');
+  const [slogan, setSlogan] = useState('让每一次发声都有回响，让每一份职责都有迹可循。透明、可追溯的校园接诉即办共治平台。');
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const load = () => {
+      void adminConfigService.getPlatformIdentityPublic().then((b) => {
+        if (b.platformName?.trim()) setPlatformTitle(b.platformName.trim());
+        if (b.slogan?.trim()) setSlogan(b.slogan.trim());
+        setLogoUrl(b.logoDataUrl?.trim() ? b.logoDataUrl.trim() : null);
+      });
+    };
+    load();
+    window.addEventListener('jsjb-mock-updated', load);
+    return () => window.removeEventListener('jsjb-mock-updated', load);
+  }, []);
+
   return (
     <footer className="border-t border-outline-variant/30 bg-surface pb-10 pt-20 dark:border-slate-700/50">
       <div className="mx-auto w-full max-w-[var(--layout-max,1600px)] px-[var(--layout-px,2rem)]">
         <div className="mb-20 grid grid-cols-1 gap-12 md:grid-cols-4">
           <div className="md:col-span-1">
             <div className="mb-6 flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-white">
-                <span className="material-symbols-outlined text-sm">account_balance</span>
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-primary text-white">
+                {logoUrl ? (
+                  <img src={logoUrl} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <span className="material-symbols-outlined text-sm">account_balance</span>
+                )}
               </div>
-              <span className="font-headline text-lg font-black text-on-surface">兰途接诉即办</span>
+              <span className="font-headline text-lg font-black text-on-surface">{platformTitle}</span>
             </div>
-            <p className="mb-6 text-sm leading-relaxed text-on-surface-variant">
-              让每一次发声都有回响，让每一份职责都有迹可循。透明、可追溯的校园接诉即办共治平台。
-            </p>
+            <p className="mb-6 text-sm leading-relaxed text-on-surface-variant">{slogan}</p>
             <div className="flex gap-4">
               <button
                 type="button"
@@ -106,7 +127,9 @@ export default function PortalFooter() {
           </div>
         </div>
         <div className="flex flex-col items-center justify-between gap-4 border-t border-outline-variant/30 pt-10 text-xs font-medium text-on-surface-variant/60 md:flex-row">
-          <p>© {new Date().getFullYear()} 兰途接诉即办</p>
+          <p>
+            © {new Date().getFullYear()} {platformTitle}
+          </p>
           <div className="flex gap-8">
             <a href="#" className="transition-colors hover:text-on-surface">
               无障碍说明

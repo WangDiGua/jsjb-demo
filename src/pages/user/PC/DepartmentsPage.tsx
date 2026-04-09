@@ -2,15 +2,15 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useIsMobileLayout } from '@/context/MobileLayoutContext';
 import MobileSubPageScaffold from '@/components/mobile/MobileSubPageScaffold';
 import { departmentService } from '@/mock';
-import type { Department } from '@/mock/types';
+import type { DepartmentShowcaseRow } from '@/mock/types';
 import { useMockDbUpdated } from '@/hooks/useMockDbUpdated';
 import { usePreferencesStore } from '@/store/preferencesStore';
-import { resolveDepartmentI18n } from '@/lib/metadataLocale';
+import { resolveDepartmentShowcaseRow } from '@/lib/metadataLocale';
 
-const typeLabel = (t: Department['type']) =>
+const typeLabel = (t: DepartmentShowcaseRow['type']) =>
   t === 'teaching' ? '教学' : t === 'logistics' ? '后勤' : t === 'administration' ? '行政' : '其他';
 
-const typeBarClass = (t: Department['type']) => {
+const typeBarClass = (t: DepartmentShowcaseRow['type']) => {
   switch (t) {
     case 'teaching':
       return 'bg-teal-500';
@@ -23,7 +23,7 @@ const typeBarClass = (t: Department['type']) => {
   }
 };
 
-const typeAvatarSurface = (t: Department['type']) => {
+const typeAvatarSurface = (t: DepartmentShowcaseRow['type']) => {
   switch (t) {
     case 'teaching':
       return 'bg-teal-500/10 text-teal-800 dark:bg-teal-500/15 dark:text-teal-100';
@@ -36,7 +36,7 @@ const typeAvatarSurface = (t: Department['type']) => {
   }
 };
 
-const chipStyles = (t: Department['type']) => {
+const chipStyles = (t: DepartmentShowcaseRow['type']) => {
   switch (t) {
     case 'teaching':
       return 'bg-teal-500/12 text-teal-900 ring-teal-500/25 dark:bg-teal-400/12 dark:text-teal-100 dark:ring-teal-400/20';
@@ -49,10 +49,13 @@ const chipStyles = (t: Department['type']) => {
   }
 };
 
-function DepartmentCard({ dept, compact }: { dept: Department; compact: boolean }) {
+function DepartmentCard({ dept, compact }: { dept: DepartmentShowcaseRow; compact: boolean }) {
   const bar = typeBarClass(dept.type);
   const avatarSurface = typeAvatarSurface(dept.type);
   const chip = chipStyles(dept.type);
+  const headline = dept.showcaseHeroTitle?.trim() || dept.name;
+  const showOfficialName = Boolean(dept.showcaseHeroTitle?.trim());
+  const displayPhone = (dept.showcasePhone ?? dept.phone).replace(/\s/g, '');
 
   return (
     <article
@@ -72,9 +75,14 @@ function DepartmentCard({ dept, compact }: { dept: Department; compact: boolean 
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-start justify-between gap-2">
-              <h2 className={`font-headline font-bold tracking-tight text-on-surface ${compact ? 'text-[1.05rem] leading-snug' : 'text-lg sm:text-xl'}`}>
-                {dept.name}
-              </h2>
+              <div className="min-w-0">
+                <h2 className={`font-headline font-bold tracking-tight text-on-surface ${compact ? 'text-[1.05rem] leading-snug' : 'text-lg sm:text-xl'}`}>
+                  {headline}
+                </h2>
+                {showOfficialName ? (
+                  <p className="mt-1 text-xs font-medium text-on-surface-variant">{dept.name}</p>
+                ) : null}
+              </div>
               <span
                 className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide ring-1 ring-inset ${chip}`}
               >
@@ -87,15 +95,29 @@ function DepartmentCard({ dept, compact }: { dept: Department; compact: boolean 
           </div>
         </div>
 
+        {dept.showcaseShortcuts?.length ? (
+          <div className={`mt-4 flex flex-wrap gap-2 ${compact ? 'text-[11px]' : 'text-xs'}`}>
+            {dept.showcaseShortcuts.map((s) => (
+              <a
+                key={`${s.label}-${s.href}`}
+                href={s.href}
+                className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 font-semibold text-primary ring-1 ring-primary/15 transition-colors hover:bg-primary/15"
+              >
+                {s.label}
+              </a>
+            ))}
+          </div>
+        ) : null}
+
         <div className={`mt-4 flex flex-col gap-2.5 ${compact ? 'text-[11px]' : 'text-xs sm:text-sm'}`}>
           <a
-            href={`tel:${dept.phone.replace(/\s/g, '')}`}
+            href={`tel:${displayPhone}`}
             className="group/row flex items-center gap-2.5 text-on-surface transition-colors hover:text-primary"
           >
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-surface-container-high text-primary transition-colors group-hover/row:bg-primary/10">
               <span className="material-symbols-outlined text-[18px] leading-none">call</span>
             </span>
-            <span className="min-w-0 truncate font-medium tabular-nums">{dept.phone}</span>
+            <span className="min-w-0 truncate font-medium tabular-nums">{dept.showcasePhone?.trim() || dept.phone}</span>
           </a>
           <a
             href={`mailto:${dept.email}`}
@@ -127,18 +149,18 @@ function DepartmentCard({ dept, compact }: { dept: Department; compact: boolean 
 
 export default function DepartmentsPage() {
   const isMobile = useIsMobileLayout();
-  const [departments, setDepartments] = useState<Department[]>([]);
+  const [departments, setDepartments] = useState<DepartmentShowcaseRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [dbTick, setDbTick] = useState(0);
   const metadataDisplayLocale = usePreferencesStore((s) => s.metadataDisplayLocale);
   const displayDepartments = useMemo(
-    () => departments.map((d) => resolveDepartmentI18n(d, metadataDisplayLocale)),
+    () => departments.map((d) => resolveDepartmentShowcaseRow(d, metadataDisplayLocale)),
     [departments, metadataDisplayLocale, dbTick],
   );
 
   const load = useCallback(() => {
     setLoading(true);
-    void departmentService.getDepartments().then((d) => {
+    void departmentService.getDepartmentsForShowcase().then((d) => {
       setDepartments(d);
       setLoading(false);
     });
@@ -168,14 +190,16 @@ export default function DepartmentsPage() {
   );
 
   const empty = !loading && departments.length === 0 ? (
-    <p className="py-16 text-center text-on-surface-variant">暂无部门</p>
+    <p className="py-16 text-center text-on-surface-variant">
+      暂未配置部门风采。管理员可在「主数据 → 部门风采」中绑定部门后，将在此处向师生展示。
+    </p>
   ) : null;
 
   if (isMobile) {
     return (
       <MobileSubPageScaffold title="部门风采" contentClassName="pt-2 pb-8">
         <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
-          浏览各部门职责与联系方式，发起诉求时更准确选择受理单位。
+          以下为已在后台配置风采展示的部门；完整受理单位列表请在「发起诉求」中选择。
         </p>
         {grid}
         {empty}
@@ -189,7 +213,7 @@ export default function DepartmentsPage() {
         <p className="text-xs font-bold uppercase tracking-[0.12em] text-primary">服务大厅</p>
         <h1 className="mt-2 font-headline text-3xl font-bold tracking-tight text-on-surface md:text-4xl">部门风采</h1>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-on-surface-variant md:text-base">
-          统一展示机构简介、对外电话与邮箱，帮助师生快速找到对口部门。
+          仅展示管理端已绑定风采的部门，与「部门风采管理」条目一致；更多单位请通过发起诉求页选择。
         </p>
       </header>
       {grid}

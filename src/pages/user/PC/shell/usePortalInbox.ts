@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { InboxItem } from '@/mock/types';
 import { notificationService } from '@/mock/services';
 import { useAppStore } from '@/store';
+import { portalToast } from './portalFeedbackStore';
 
 export function usePortalInbox() {
   const navigate = useNavigate();
@@ -16,12 +17,16 @@ export function usePortalInbox() {
       setUnread(0);
       return;
     }
-    const [list, n] = await Promise.all([
-      notificationService.list(currentUser.id),
-      notificationService.unreadCount(currentUser.id),
-    ]);
-    setInbox(list);
-    setUnread(n);
+    try {
+      const [list, n] = await Promise.all([
+        notificationService.list(currentUser.id),
+        notificationService.unreadCount(currentUser.id),
+      ]);
+      setInbox(list);
+      setUnread(n);
+    } catch (e) {
+      portalToast.error(e instanceof Error ? e.message : '消息加载失败');
+    }
   }, [currentUser?.id]);
 
   useEffect(() => {
@@ -32,9 +37,13 @@ export function usePortalInbox() {
   }, [refreshInbox]);
 
   const openInboxItem = async (item: InboxItem) => {
-    await notificationService.markRead(item.id);
-    await refreshInbox();
-    if (item.href) navigate(item.href);
+    try {
+      await notificationService.markRead(item.id);
+      await refreshInbox();
+      if (item.href) navigate(item.href);
+    } catch (e) {
+      portalToast.error(e instanceof Error ? e.message : '操作失败');
+    }
   };
 
   return { inbox, unread, refreshInbox, openInboxItem, currentUser };

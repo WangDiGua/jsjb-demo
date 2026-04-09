@@ -1,0 +1,38 @@
+import { lazy } from 'react';
+
+/** 路由级懒加载：降低首包体积，按需拉取各端页面逻辑（外观与行为与原同步 import 一致） */
+export const ResponsiveHome = lazy(() => import('@/pages/user/ResponsiveHome'));
+export const LoginPage = lazy(() => import('@/pages/user/PC/LoginPage'));
+export const RegisterPage = lazy(() => import('@/pages/user/PC/RegisterPage'));
+export const ForgotPasswordPage = lazy(() => import('@/pages/user/PC/ForgotPasswordPage'));
+export const CreateAppealPage = lazy(() => import('@/pages/user/PC/CreateAppealPage'));
+export const AppealListPage = lazy(() => import('@/pages/user/PC/AppealListPage'));
+export const AppealDetailPage = lazy(() => import('@/pages/user/PC/AppealDetailPage'));
+export const MyAppealsPage = lazy(() => import('@/pages/user/PC/MyAppealsPage'));
+export const DepartmentsPage = lazy(() => import('@/pages/user/PC/DepartmentsPage'));
+export const NoticeDetailPage = lazy(() => import('@/pages/user/PC/NoticeDetailPage'));
+export const SearchPage = lazy(() => import('@/pages/user/PC/SearchPage'));
+export const AIDemoPage = lazy(() => import('@/pages/user/PC/AIDemoPage'));
+export const IntegrationsPage = lazy(() => import('@/pages/user/PC/IntegrationsPage'));
+export const AdminLoginPage = lazy(() => import('@/pages/admin/LoginPage'));
+export const DashboardPage = lazy(() => import('@/pages/admin/DashboardPage'));
+export const AppealsManagePage = lazy(() => import('@/pages/admin/AppealsManagePage'));
+export const LeaderWorkbenchPage = lazy(() => import('@/pages/admin/LeaderWorkbenchPage'));
+export const DepartmentsManagePage = lazy(() => import('@/pages/admin/DepartmentsManagePage'));
+export const TypesManagePage = lazy(() => import('@/pages/admin/TypesManagePage'));
+export const StatisticsPage = lazy(() => import('@/pages/admin/StatisticsPage'));
+export const WeeklyReportPage = lazy(() => import('@/pages/admin/WeeklyReportPage'));
+export const SettingsPage = lazy(() => import('@/pages/admin/SettingsPage'));
+export const FormsManagePage = lazy(() => import('@/pages/admin/stubs/FormsManagePage'));
+export const WorkflowPage = lazy(() => import('@/pages/admin/stubs/WorkflowPage'));
+export const RolesManagePage = lazy(() => import('@/pages/admin/stubs/RolesManagePage'));
+export const DeptShowcaseManagePage = lazy(() => import('@/pages/admin/stubs/DeptShowcaseManagePage'));
+export const AbnormalUsersPage = lazy(() => import('@/pages/admin/stubs/AbnormalUsersPage'));
+export const NoticesManagePage = lazy(() => import('@/pages/admin/stubs/NoticesManagePage'));
+export const UiManagePage = lazy(() => import('@/pages/admin/stubs/UiManagePage'));
+export const SystemManagePage = lazy(() => import('@/pages/admin/stubs/SystemManagePage'));
+export const SchedulerPage = lazy(() => import('@/pages/admin/stubs/SchedulerPage'));
+export const KnowledgeBasePage = lazy(() => import('@/pages/admin/stubs/KnowledgeBasePage'));
+export const RobotManagePage = lazy(() => import('@/pages/admin/stubs/RobotManagePage'));
+export const MobileDemoPage = lazy(() => import('@/pages/demo/MobileDemoPage'));
+export const MobileMorePage = lazy(() => import('@/pages/user/Mobile/MobileMorePage'));

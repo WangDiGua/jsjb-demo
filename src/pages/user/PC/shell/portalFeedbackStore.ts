@@ -29,7 +29,7 @@ export const usePortalFeedbackStore = create<PortalFeedbackState>((set, get) => 
   toasts: [],
   confirm: null,
 
-  showToast: (type, message, durationMs = 5200) => {
+  showToast: (type, message, durationMs = 2800) => {
     const id = `toast_${++toastCounter}_${Date.now()}`;
     set((s) => ({ toasts: [...s.toasts, { id, type, message }] }));
     if (durationMs > 0) {

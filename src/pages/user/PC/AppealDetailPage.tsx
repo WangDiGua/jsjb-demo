@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { appealService, replyService, flowService, aiService } from '@/mock';
+import { appealService, replyService, flowService } from '@/mock';
 import type { Appeal, Reply, FlowRecord, FlowAction } from '@/mock/types';
 import { useAppStore } from '@/store';
 import { useIsMobileLayout } from '@/context/MobileLayoutContext';
 import MobileSubPageScaffold from '@/components/mobile/MobileSubPageScaffold';
 import { PortalButton } from './ui';
+import { portalToast } from './shell/portalFeedbackStore';
 
 const statusText: Record<string, string> = {
   pending: '待受理',
@@ -80,6 +81,36 @@ function StarRow({ rating, max = 5 }: { rating: number; max?: number }) {
   );
 }
 
+function DetailSection({
+  icon,
+  title,
+  subtitle,
+  children,
+}: {
+  icon: string;
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-2xl border border-outline-variant/18 bg-surface-container-lowest/85 shadow-[0_12px_42px_-22px_rgba(15,23,42,0.18)] dark:border-outline-variant/25 dark:bg-surface-container-lowest/40 dark:shadow-[0_12px_42px_-22px_rgba(0,0,0,0.5)]">
+      <div className="flex items-start gap-3 border-b border-outline-variant/12 px-5 py-4 sm:gap-4 sm:px-6 sm:py-5">
+        <span
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-[22px] text-primary material-symbols-outlined"
+          aria-hidden
+        >
+          {icon}
+        </span>
+        <div className="min-w-0 flex-1">
+          <h2 className="font-headline text-lg font-bold tracking-tight text-on-surface sm:text-xl">{title}</h2>
+          {subtitle ? <p className="mt-1 text-sm leading-relaxed text-on-surface-variant">{subtitle}</p> : null}
+        </div>
+      </div>
+      <div className="px-5 py-5 sm:px-6 sm:py-6">{children}</div>
+    </section>
+  );
+}
+
 export default function AppealDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -94,7 +125,6 @@ export default function AppealDetailPage() {
   const [comment, setComment] = useState('');
   const [copied, setCopied] = useState(false);
   const [nudgeMsg, setNudgeMsg] = useState('');
-  const [evalSensErr, setEvalSensErr] = useState('');
   const viewCountedIdRef = useRef<string | null>(null);
   const viewTrackIdRef = useRef<string | undefined>(undefined);
 
@@ -114,6 +144,8 @@ export default function AppealDetailPage() {
         setRating(a.评价.rating);
         setComment(a.评价.comment || '');
       }
+    } catch (e) {
+      portalToast.error(e instanceof Error ? e.message : '加载失败，请稍后重试');
     } finally {
       setLoading(false);
     }
@@ -147,48 +179,41 @@ export default function AppealDetailPage() {
 
   const handleEvaluate = async () => {
     if (!id) return;
-    setEvalSensErr('');
-    const c = comment.trim();
-    if (c.length > 0) {
-      try {
-        const r = await aiService.checkSensitiveWords(c);
-        if (!r.ok) {
-          setEvalSensErr('内容安全检测未完成，请检查网络后重试');
-          return;
-        }
-        if (r.hasSensitive) {
-          setEvalSensErr(`评价文字包含不适宜表述：${r.words.join('、')}`);
-          return;
-        }
-      } catch (e) {
-        setEvalSensErr(e instanceof Error ? e.message : '敏感词检测失败');
-        return;
-      }
-    }
     setEvaluating(true);
     try {
       await appealService.evaluateAppeal(id, rating, comment);
       const a = await appealService.getAppeal(id);
       setAppeal(a);
+      portalToast.success('评价已提交，感谢您的反馈');
     } catch (e) {
-      setEvalSensErr(e instanceof Error ? e.message : '提交失败');
+      portalToast.error(e instanceof Error ? e.message : '提交失败');
     } finally {
       setEvaluating(false);
     }
   };
 
-  const copy = (text: string) => {
-    void navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const copy = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      portalToast.error('复制失败，请手动选择文本');
+    }
   };
 
   const handleNudge = async () => {
     if (!id || !currentUser) return;
-    const r = await appealService.nudgeAppeal(id, { id: currentUser.id, nickname: currentUser.nickname });
-    setNudgeMsg(r.ok ? r.message : r.message);
-    setTimeout(() => setNudgeMsg(''), 4000);
-    void fetchData();
+    try {
+      const r = await appealService.nudgeAppeal(id, { id: currentUser.id, nickname: currentUser.nickname });
+      if (r.ok) portalToast.success(r.message);
+      else portalToast.warning(r.message);
+      setNudgeMsg(r.message);
+      setTimeout(() => setNudgeMsg(''), 4000);
+      void fetchData();
+    } catch (e) {
+      portalToast.error(e instanceof Error ? e.message : '催办失败');
+    }
   };
 
   if (loading) {
@@ -233,185 +258,199 @@ export default function AppealDetailPage() {
   const copyRight = (
     <button
       type="button"
-      className={`m-portal-tap-clear shrink-0 rounded-full px-3 py-2 text-xs font-bold transition-all ${
+      className={`m-portal-tap-clear inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold transition-all ${
         copied
-          ? 'bg-success/15 text-success ring-1 ring-success/30'
-          : 'bg-surface-container-high text-on-surface-variant ring-1 ring-outline-variant/20 active:bg-surface-container-high/80 dark:bg-surface-container'
+          ? 'bg-success/15 text-success ring-1 ring-success/35'
+          : 'bg-surface-container-high/90 text-on-surface ring-1 ring-outline-variant/25 hover:bg-surface-container-high active:scale-[0.98] dark:bg-surface-container dark:ring-outline-variant/35'
       }`}
       onClick={() => copy(`${appeal.title}\n${appeal.content}`)}
     >
       {copied ? (
-        <span className="inline-flex items-center gap-1">
-          <span className="material-symbols-outlined text-[16px] leading-none">check</span>
+        <>
+          <span className="material-symbols-outlined text-[18px] leading-none">check</span>
           已复制
-        </span>
+        </>
       ) : (
-        <span className="inline-flex items-center gap-1">
-          <span className="material-symbols-outlined text-[16px] leading-none">content_copy</span>
-          复制
-        </span>
+        <>
+          <span className="material-symbols-outlined text-[18px] leading-none">content_copy</span>
+          复制正文
+        </>
       )}
     </button>
   );
 
+  const metaItems = [
+    { label: '类型', value: appeal.type },
+    { label: '提交人', value: appeal.isAnonymous ? '匿名' : appeal.userName },
+    { label: '提交时间', value: appeal.createTime },
+    { label: '浏览次数', value: String(appeal.浏览量 ?? 0) },
+  ];
+
   const detailSections = (
-    <div
-      className={`border-outline-variant/20 bg-surface-container-lowest dark:border-outline-variant/30 ${
-        isMobile ? 'border-y' : 'rounded-md border shadow-sm'
-      }`}
-    >
-      {/* 诉求标题与正文 */}
-      <div className={`${isMobile ? 'px-4 py-6' : 'px-8 py-8 lg:px-12 lg:py-10'}`}>
-        <div className="flex flex-wrap items-start justify-between gap-3 gap-y-2">
-          <h2 className="max-w-4xl font-headline text-xl font-bold leading-snug tracking-tight text-on-surface lg:text-2xl">
-            {appeal.title}
-          </h2>
-          <span
-            className={`shrink-0 rounded px-2.5 py-1 text-xs font-bold ring-1 ${statusBadgeClass(appeal.status)}`}
-          >
-            {statusText[appeal.status] ?? appeal.status}
-          </span>
-        </div>
-
-        <div className="mt-6 flex flex-wrap gap-x-8 gap-y-2 border-b border-outline-variant/15 pb-6 text-sm">
-          <span>
-            <span className="text-on-surface-variant">类型</span>
-            <span className="ml-2 font-semibold text-on-surface">{appeal.type}</span>
-          </span>
-          <span>
-            <span className="text-on-surface-variant">提交人</span>
-            <span className="ml-2 font-semibold text-on-surface">{appeal.isAnonymous ? '匿名' : appeal.userName}</span>
-          </span>
-          <span className="tabular-nums">
-            <span className="text-on-surface-variant">提交时间</span>
-            <span className="ml-2 font-semibold text-on-surface">{appeal.createTime}</span>
-          </span>
-          <span className="tabular-nums">
-            <span className="text-on-surface-variant">浏览</span>
-            <span className="ml-2 font-semibold text-on-surface">{appeal.浏览量 ?? 0}</span>
-          </span>
-        </div>
-
-        {appeal.status === 'reply_draft' && currentUser?.id === appeal.userId ? (
-          <div className="mt-6 flex gap-3 border border-amber-200/80 bg-amber-50/80 px-4 py-3 text-sm text-amber-950 dark:border-amber-800/50 dark:bg-amber-950/25 dark:text-amber-50">
-            <span className="material-symbols-outlined shrink-0 text-amber-600 dark:text-amber-300">hourglass_top</span>
-            <p>承办部门已提交答复，正在审核中。审核通过后您将在此处看到正式答复。</p>
-          </div>
-        ) : null}
-
-        <div className="mt-6 flex flex-wrap gap-2">
-          {currentUser?.id === appeal.userId &&
-          ['pending', 'accepted', 'processing', 'reply_draft'].includes(appeal.status) ? (
-            <PortalButton type="button" variant="outline" size="sm" className="font-bold" onClick={() => void handleNudge()}>
-              <span className="inline-flex items-center gap-1">
-                <span className="material-symbols-outlined text-[18px]">notifications_active</span>
-                催办
-              </span>
-            </PortalButton>
-          ) : null}
-          {currentUser?.id === appeal.userId && ['returned', 'withdrawn'].includes(appeal.status) ? (
-            <PortalButton
-              type="button"
-              variant="primary"
-              size="sm"
-              className="font-bold"
-              onClick={() => navigate(`/user/appeal/create?resubmit=${appeal.id}`)}
+    <div className="space-y-5 sm:space-y-6">
+      {/* Summary hero */}
+      <div className="overflow-hidden rounded-2xl border border-outline-variant/18 bg-gradient-to-br from-surface-container-lowest via-surface-container-lowest to-primary/[0.04] shadow-[0_14px_48px_-24px_rgba(15,23,42,0.22)] dark:border-outline-variant/25 dark:from-surface-container-lowest/90 dark:to-primary/[0.06] dark:shadow-[0_14px_48px_-24px_rgba(0,0,0,0.55)]">
+        <div className={`${isMobile ? 'px-4 py-6' : 'px-6 py-8 sm:px-8'}`}>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <h2 className="max-w-3xl font-headline text-2xl font-bold leading-snug tracking-tight text-on-surface sm:text-3xl">
+              {appeal.title}
+            </h2>
+            <span
+              className={`inline-flex w-fit shrink-0 items-center rounded-full px-3 py-1.5 text-xs font-bold ring-1 ${statusBadgeClass(appeal.status)}`}
             >
-              <span className="inline-flex items-center gap-1">
-                <span className="material-symbols-outlined text-[18px]">add_comment</span>
-                再次提问
-              </span>
-            </PortalButton>
-          ) : null}
-        </div>
-        {nudgeMsg ? (
-          <p className="mt-3 flex items-center gap-2 text-sm font-semibold text-primary">
-            <span className="material-symbols-outlined text-[18px]">check_circle</span>
-            {nudgeMsg}
-          </p>
-        ) : null}
-
-        <div className="mt-10">
-          <h3 className="text-xs font-bold uppercase tracking-[0.14em] text-on-surface-variant">诉求内容</h3>
-          <div className="mt-3 max-w-4xl border-l-2 border-primary/35 pl-5">
-            <p className="whitespace-pre-wrap text-base leading-[1.7] text-on-surface">{appeal.content}</p>
+              {statusText[appeal.status] ?? appeal.status}
+            </span>
           </div>
-          {appeal.images?.length ? (
-            <div className="mt-6 grid max-w-4xl grid-cols-2 gap-3 sm:grid-cols-3">
-              {appeal.images.map((img, i) => (
-                <img key={i} src={img} alt="" className="aspect-video w-full rounded object-cover ring-1 ring-black/5" />
-              ))}
-            </div>
-          ) : null}
-        </div>
-      </div>
 
-      {appeal.领导批示 ? (
-        <div className={`border-t border-outline-variant/15 ${isMobile ? 'px-4 py-6' : 'px-8 py-8 lg:px-12 lg:py-10'}`}>
-          <h3 className="text-xs font-bold uppercase tracking-[0.14em] text-on-surface-variant">校领导批示</h3>
-          <p className="mt-1 text-sm text-on-surface-variant">重要事项交办意见（如有）</p>
-          <div className="mt-4 max-w-4xl rounded-xl border border-indigo-500/20 bg-indigo-500/[0.06] px-4 py-3 dark:bg-indigo-500/10">
-            <p className="text-sm font-semibold text-on-surface">
-              {appeal.领导批示.leaderName}
-              <span className="ml-2 font-normal text-on-surface-variant tabular-nums">{appeal.领导批示.time}</span>
-            </p>
-            <p className="mt-2 whitespace-pre-wrap text-base leading-[1.7] text-on-surface">{appeal.领导批示.content}</p>
-          </div>
-        </div>
-      ) : null}
+          <dl className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {metaItems.map((row) => (
+              <div
+                key={row.label}
+                className="rounded-xl border border-outline-variant/12 bg-surface/70 px-4 py-3 dark:bg-surface-container/50"
+              >
+                <dt className="text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant/85">{row.label}</dt>
+                <dd className="mt-1.5 text-sm font-semibold leading-snug text-on-surface tabular-nums">{row.value}</dd>
+              </div>
+            ))}
+          </dl>
 
-      {/* 部门答复 */}
-      <div className={`border-t border-outline-variant/15 ${isMobile ? 'px-4 py-6' : 'px-8 py-8 lg:px-12 lg:py-10'}`}>
-        <h3 className="text-xs font-bold uppercase tracking-[0.14em] text-on-surface-variant">部门答复</h3>
-        <p className="mt-1 text-sm text-on-surface-variant">承办单位的正式回复</p>
-        <div className="mt-6">
-          {replies.length === 0 ? (
-            <div className="border border-dashed border-outline-variant/35 py-12 text-center dark:border-outline-variant/50">
-              <span className="material-symbols-outlined text-3xl text-on-surface-variant/40">forum</span>
-              <p className="mt-2 text-sm font-medium text-on-surface-variant">等待承办部门答复</p>
-              <p className="mx-auto mt-1 max-w-sm text-xs text-on-surface-variant/80">
-                受理后将由对口单位处理，您可在「我的诉求」中查看进度。
+          {appeal.status === 'reply_draft' && currentUser?.id === appeal.userId ? (
+            <div className="mt-6 flex gap-3 rounded-xl border border-amber-200/90 bg-amber-50/95 px-4 py-3 text-sm text-amber-950 shadow-sm dark:border-amber-800/40 dark:bg-amber-950/30 dark:text-amber-50">
+              <span className="material-symbols-outlined shrink-0 text-amber-600 dark:text-amber-300">hourglass_top</span>
+              <p className="leading-relaxed">
+                承办部门已提交答复，正在审核中。审核通过后您将在此处看到正式答复。
               </p>
             </div>
-          ) : (
-            <div className="space-y-8">
-              {replies.map((reply) => (
-                <article key={reply.id} className="max-w-4xl border-l-2 border-primary/50 pl-5">
-                  <div className="flex flex-wrap items-baseline gap-2 gap-y-1">
-                    <span className="inline-flex h-8 w-8 items-center justify-center rounded bg-primary/12 text-sm font-bold text-primary">
-                      {reply.handlerName[0]}
-                    </span>
-                    <span className="font-headline font-bold text-on-surface">{reply.handlerName}</span>
-                    <span className="rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary ring-1 ring-primary/20">
-                      官方
-                    </span>
-                    <time className="text-xs font-medium text-on-surface-variant tabular-nums">{reply.createTime}</time>
-                  </div>
-                  <p className="mt-4 whitespace-pre-wrap text-base leading-[1.7] text-on-surface">{reply.content}</p>
-                </article>
-              ))}
-            </div>
-          )}
+          ) : null}
+
+          <div className="mt-6 flex flex-wrap items-center gap-2">
+            {currentUser?.id === appeal.userId &&
+            ['pending', 'accepted', 'processing', 'reply_draft'].includes(appeal.status) ? (
+              <PortalButton type="button" variant="outline" size="sm" className="font-semibold" onClick={() => void handleNudge()}>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[18px]">notifications_active</span>
+                  催办进度
+                </span>
+              </PortalButton>
+            ) : null}
+            {currentUser?.id === appeal.userId && ['returned', 'withdrawn'].includes(appeal.status) ? (
+              <PortalButton
+                type="button"
+                variant="primary"
+                size="sm"
+                className="font-semibold"
+                onClick={() => navigate(`/user/appeal/create?resubmit=${appeal.id}`)}
+              >
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[18px]">add_comment</span>
+                  再次提问
+                </span>
+              </PortalButton>
+            ) : null}
+          </div>
+          {nudgeMsg ? (
+            <p className="mt-4 flex items-start gap-2 rounded-lg bg-primary/8 px-3 py-2 text-sm font-medium text-primary dark:bg-primary/15">
+              <span className="material-symbols-outlined shrink-0 text-[18px]">check_circle</span>
+              {nudgeMsg}
+            </p>
+          ) : null}
         </div>
       </div>
 
-      {/* 评价 */}
+      <DetailSection icon="article" title="诉求内容" subtitle="您提交的问题与诉求原文">
+        <div className="max-w-3xl rounded-xl bg-surface-container-high/40 px-4 py-4 dark:bg-surface-container/35">
+          <p className="whitespace-pre-wrap text-[15px] leading-[1.75] text-on-surface">{appeal.content}</p>
+        </div>
+        {appeal.images?.length ? (
+          <div className="mt-5 grid max-w-3xl grid-cols-2 gap-3 sm:grid-cols-3">
+            {appeal.images.map((img, i) => (
+              <img
+                key={i}
+                src={img}
+                alt={`附图 ${i + 1}`}
+                className="aspect-video w-full rounded-lg object-cover ring-1 ring-outline-variant/20"
+              />
+            ))}
+          </div>
+        ) : null}
+      </DetailSection>
+
+      {appeal.领导批示 ? (
+        <section className="rounded-2xl border border-indigo-500/25 bg-indigo-500/[0.07] shadow-[0_12px_40px_-22px_rgba(67,56,202,0.25)] dark:border-indigo-400/20 dark:bg-indigo-500/10 dark:shadow-[0_12px_40px_-22px_rgba(0,0,0,0.45)]">
+          <div className="flex items-start gap-3 border-b border-indigo-500/15 px-5 py-4 sm:px-6 sm:py-5 dark:border-indigo-400/10">
+            <span
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500/15 text-[22px] text-indigo-800 material-symbols-outlined dark:text-indigo-200"
+              aria-hidden
+            >
+              account_balance
+            </span>
+            <div>
+              <h2 className="font-headline text-lg font-bold text-on-surface">校领导批示</h2>
+              <p className="mt-1 text-sm text-on-surface-variant">重要事项交办意见（如有）</p>
+            </div>
+          </div>
+          <div className="px-5 py-5 sm:px-6 sm:py-6">
+            <div className="max-w-3xl rounded-xl border border-indigo-500/20 bg-surface/80 px-4 py-4 dark:bg-surface-container-lowest/50">
+              <p className="text-sm font-semibold text-on-surface">
+                {appeal.领导批示.leaderName}
+                <span className="ml-2 font-normal text-on-surface-variant tabular-nums">{appeal.领导批示.time}</span>
+              </p>
+              <p className="mt-3 whitespace-pre-wrap text-[15px] leading-[1.75] text-on-surface">{appeal.领导批示.content}</p>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      <DetailSection icon="forum" title="部门答复" subtitle="承办单位对外发布的正式回复">
+        {replies.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-outline-variant/35 bg-surface-container-high/25 px-6 py-12 text-center dark:border-outline-variant/45 dark:bg-surface-container/25">
+            <span className="material-symbols-outlined text-4xl text-on-surface-variant/40">mark_chat_unread</span>
+            <p className="mt-3 text-sm font-semibold text-on-surface">等待承办部门答复</p>
+            <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-on-surface-variant">
+              受理后将由对口单位处理，您可在「我的诉求」中关注进度。
+            </p>
+          </div>
+        ) : (
+          <ul className="m-0 list-none space-y-4 p-0">
+            {replies.map((reply) => (
+              <li key={reply.id}>
+                <article className="max-w-3xl rounded-2xl border border-outline-variant/15 bg-surface-container-high/35 p-4 shadow-sm dark:border-outline-variant/25 dark:bg-surface-container/40 sm:p-5">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/12 text-base font-bold text-primary">
+                      {reply.handlerName[0]}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2 gap-y-1">
+                        <span className="font-headline font-bold text-on-surface">{reply.handlerName}</span>
+                        <span className="rounded-md bg-primary/12 px-2 py-0.5 text-[11px] font-bold text-primary ring-1 ring-primary/15">
+                          官方
+                        </span>
+                      </div>
+                      <time className="mt-0.5 block text-xs font-medium text-on-surface-variant tabular-nums">{reply.createTime}</time>
+                    </div>
+                  </div>
+                  <p className="mt-4 whitespace-pre-wrap text-[15px] leading-[1.75] text-on-surface">{reply.content}</p>
+                </article>
+              </li>
+            ))}
+          </ul>
+        )}
+      </DetailSection>
+
       {appeal.status === 'replied' && !appeal.评价 ? (
-        <div className={`border-t border-outline-variant/15 ${isMobile ? 'px-4 py-6' : 'px-8 py-8 lg:px-12 lg:py-10'}`}>
-          <h3 className="text-xs font-bold uppercase tracking-[0.14em] text-on-surface-variant">服务评价</h3>
-          <p className="mt-1 text-sm text-on-surface-variant">您的反馈有助于持续改进服务质量</p>
-          <div className="mt-5 flex gap-0.5">
+        <DetailSection icon="star" title="服务评价" subtitle="您的反馈有助于我们持续改进服务质量">
+          <div className="flex flex-wrap gap-1">
             {[1, 2, 3, 4, 5].map((n) => (
               <button
                 key={n}
                 type="button"
-                className="p-1 transition-transform active:scale-95"
+                className="rounded-lg p-1.5 transition-transform hover:bg-surface-container-high/60 active:scale-95"
                 onClick={() => setRating(n)}
                 aria-label={`${n} 星`}
               >
                 <span
-                  className={`material-symbols-outlined text-3xl leading-none ${n <= rating ? 'text-amber-500' : 'text-outline-variant/35'}`}
-                  style={{ fontVariationSettings: n <= rating ? "'FILL' 1, 'wght' 500" : "'FILL' 0" }}
+                  className={`material-symbols-outlined text-4xl leading-none ${n <= rating ? 'text-amber-500' : 'text-outline-variant/30'}`}
+                  style={{ fontVariationSettings: n <= rating ? "'FILL' 1, 'wght' 500" : "'FILL' 0, 'wght' 400" }}
                 >
                   star
                 </span>
@@ -419,83 +458,74 @@ export default function AppealDetailPage() {
             ))}
           </div>
           <textarea
-            className="mt-4 max-w-2xl w-full border border-outline-variant/30 bg-surface px-3 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/25 dark:border-outline-variant/50 dark:bg-surface-container-low/40"
+            className="mt-4 max-w-xl w-full rounded-xl border border-outline-variant/25 bg-surface px-4 py-3 text-sm text-on-surface placeholder:text-on-surface-variant/55 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-outline-variant/45 dark:bg-surface-container-low/50"
             rows={3}
             placeholder="选填：具体意见或建议"
             value={comment}
-            onChange={(e) => {
-              setComment(e.target.value);
-              setEvalSensErr('');
-            }}
+            onChange={(e) => setComment(e.target.value)}
           />
-          {evalSensErr ? <p className="mt-3 text-sm text-red-600">{evalSensErr}</p> : null}
           <PortalButton
             type="button"
             variant="primary"
             size="md"
             disabled={evaluating}
-            className="mt-4 px-8 font-bold"
+            className="mt-5 min-w-[8rem] font-semibold"
             onClick={() => void handleEvaluate()}
           >
             {evaluating ? '提交中…' : '提交评价'}
           </PortalButton>
-        </div>
+        </DetailSection>
       ) : null}
 
       {appeal.评价 ? (
-        <div className={`border-t border-outline-variant/15 ${isMobile ? 'px-4 py-6' : 'px-8 py-8 lg:px-12 lg:py-10'}`}>
-          <h3 className="text-xs font-bold uppercase tracking-[0.14em] text-on-surface-variant">办事评价</h3>
-          <div className="mt-3 flex items-center gap-2">
+        <DetailSection icon="reviews" title="办事评价" subtitle="您对本次办理服务的评分与留言">
+          <div className="flex flex-wrap items-center gap-3">
             <StarRow rating={appeal.评价.rating} />
-            <span className="text-sm font-semibold text-on-surface">{appeal.评价.rating} / 5</span>
+            <span className="rounded-lg bg-amber-500/12 px-2.5 py-1 text-sm font-bold tabular-nums text-amber-900 dark:text-amber-100">
+              {appeal.评价.rating} / 5
+            </span>
           </div>
           {appeal.评价.comment ? (
-            <blockquote className="mt-4 max-w-2xl border-l-2 border-success/50 py-0.5 pl-4 text-sm leading-relaxed text-on-surface">
+            <blockquote className="mt-5 max-w-xl rounded-xl border-l-4 border-success/60 bg-success/6 px-4 py-3 text-sm leading-relaxed text-on-surface dark:bg-success/10">
               {appeal.评价.comment}
             </blockquote>
           ) : null}
-        </div>
+        </DetailSection>
       ) : null}
 
-      {/* 办理流程 */}
-      <div className={`border-t border-outline-variant/15 ${isMobile ? 'px-4 py-6' : 'px-8 py-8 lg:px-12 lg:pb-10 lg:pt-8'}`}>
-        <h3 className="text-xs font-bold uppercase tracking-[0.14em] text-on-surface-variant">办理流程</h3>
-        <p className="mt-1 text-sm text-on-surface-variant">按时间顺序的关键节点</p>
+      <DetailSection icon="timeline" title="办理流程" subtitle="按时间顺序展示的关键节点">
         {sortedFlows.length === 0 ? (
-          <div className="mt-6 border border-dashed border-outline-variant/35 py-10 text-center dark:border-outline-variant/50">
-            <span className="material-symbols-outlined text-3xl text-on-surface-variant/35">timeline</span>
-            <p className="mt-2 text-sm font-medium text-on-surface-variant">暂无流程记录</p>
-            <p className="mx-auto mt-1 max-w-md text-xs text-on-surface-variant/75">
-              提交、受理、答复等节点会在办理过程中自动写入。若刚创建诉求，请稍后刷新查看。
+          <div className="rounded-xl border border-dashed border-outline-variant/35 bg-surface-container-high/25 px-6 py-10 text-center dark:border-outline-variant/45 dark:bg-surface-container/25">
+            <span className="material-symbols-outlined text-4xl text-on-surface-variant/35">timeline</span>
+            <p className="mt-3 text-sm font-semibold text-on-surface">暂无流程记录</p>
+            <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-on-surface-variant">
+              提交、受理、答复等节点会在办理过程中自动写入。若诉求刚创建，请稍后刷新查看。
             </p>
           </div>
         ) : (
-          <ol className="relative m-0 mt-8 max-w-3xl list-none space-y-0 p-0">
+          <ol className="relative m-0 max-w-3xl list-none space-y-0 p-0">
             {sortedFlows.map((flow, idx) => {
               const ui = FLOW_UI[flow.action];
               const last = idx === sortedFlows.length - 1;
               return (
-                <li
-                  key={flow.id}
-                  className={`relative flex gap-4 ${last ? 'pb-0' : 'border-b border-outline-variant/10 pb-6'}`}
-                >
+                <li key={flow.id} className="relative flex gap-4 pb-8 last:pb-0">
                   {!last ? (
-                    <div
-                      className={`absolute left-[15px] top-8 h-[calc(100%-0.5rem)] w-px ${ui.rail} opacity-40`}
+                    <span
+                      className="absolute left-[17px] top-10 h-[calc(100%-0.5rem)] w-px bg-gradient-to-b from-outline-variant/45 via-outline-variant/25 to-transparent dark:from-outline-variant/40 dark:via-outline-variant/20"
                       aria-hidden
                     />
                   ) : null}
                   <div
-                    className={`relative z-[1] flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${ui.iconWrap}`}
+                    className={`relative z-[1] flex h-9 w-9 shrink-0 items-center justify-center rounded-full shadow-md ${ui.iconWrap}`}
                   >
                     <span className="material-symbols-outlined text-[18px] leading-none">{ui.icon}</span>
                   </div>
-                  <div className="min-w-0 flex-1 pt-0.5">
+                  <div className="min-w-0 flex-1 rounded-xl border border-outline-variant/12 bg-surface-container-high/30 px-4 py-3 dark:border-outline-variant/20 dark:bg-surface-container/35">
                     <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                      <span className="font-headline font-bold text-on-surface">{ui.label}</span>
+                      <span className="font-headline text-sm font-bold text-on-surface sm:text-base">{ui.label}</span>
                       <span className="text-xs font-medium text-on-surface-variant">{flow.operatorName}</span>
                     </div>
-                    <time className="mt-0.5 block text-xs text-on-surface-variant/90 tabular-nums">{flow.createTime}</time>
+                    <time className="mt-1 block text-xs text-on-surface-variant tabular-nums">{flow.createTime}</time>
                     {flow.content ? (
                       <p className="mt-2 max-w-prose text-sm leading-relaxed text-on-surface">{flow.content}</p>
                     ) : null}
@@ -505,7 +535,7 @@ export default function AppealDetailPage() {
             })}
           </ol>
         )}
-      </div>
+      </DetailSection>
     </div>
   );
 
@@ -518,11 +548,11 @@ export default function AppealDetailPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 pb-12 lg:px-8">
-      <header className="sticky top-0 z-10 -mx-4 mb-6 flex items-center justify-between gap-3 border-b border-outline-variant/15 bg-surface/90 px-4 py-3 backdrop-blur-md dark:bg-surface/88 dark:border-outline-variant/40 sm:static sm:mx-0 sm:mb-8 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:backdrop-blur-none">
-        <PortalButton variant="link" size="md" className="shrink-0 p-0 text-sm font-bold text-primary" onClick={() => navigate(-1)}>
-          <span className="inline-flex items-center gap-1">
-            <span className="material-symbols-outlined text-lg leading-none">arrow_back</span>
+    <div className="mx-auto w-full max-w-5xl px-4 pb-16 sm:px-6 lg:px-8">
+      <header className="sticky top-20 z-30 -mx-4 mb-8 flex items-center justify-between gap-3 rounded-2xl border border-outline-variant/15 bg-surface/92 px-4 py-3 shadow-sm backdrop-blur-lg dark:border-outline-variant/30 dark:bg-surface/90 sm:static sm:top-0 sm:mx-0 sm:mb-10 sm:rounded-none sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:shadow-none sm:backdrop-blur-none">
+        <PortalButton variant="link" size="md" className="shrink-0 p-0 text-sm font-semibold text-primary" onClick={() => navigate(-1)}>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-xl leading-none">arrow_back</span>
             返回
           </span>
         </PortalButton>

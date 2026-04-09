@@ -1,5 +1,6 @@
 import type {
   Appeal,
+  DepartmentCatalogEntry,
   FlowRecord,
   InboxItem,
   Notice,
@@ -9,16 +10,8 @@ import type {
   WeeklyReportSnapshot,
 } from './types';
 import type { MetadataI18nStore } from './metadataI18nTypes';
-import {
-  mockAppeals as seedAppeals,
-  mockReplies as seedReplies,
-  mockFlowRecords as seedFlows,
-  mockNotices,
-  deriveQuestionTypeCounts,
-  sensitiveWords,
-  mockUsers,
-} from './data';
-import { seedAdminConfigDefaults } from './adminConfigSeed';
+import { mockNotices, departmentTemplates, deriveQuestionTypeCounts, sensitiveWords } from './data';
+import { mergePartialSystemSettings, seedAdminConfigDefaults, seedSystemSettings } from './adminConfigSeed';
 import type { AdminConfigBundle } from './adminConfigTypes';
 import { idbDelete, idbGet, idbSet } from '@/lib/idbKv';
 import { enrichMockData } from './dataEnhancer';
@@ -35,6 +28,8 @@ const BROADCAST_NAME = 'jsjb-mock-db';
 export type MockDb = {
   /** 数据版本号 */
   _version?: number;
+  /** 部门主数据（静态字段）；统计由诉求派生 */
+  departments: DepartmentCatalogEntry[];
   appeals: Appeal[];
   replies: Reply[];
   flowRecords: FlowRecord[];
@@ -60,18 +55,10 @@ let bc: BroadcastChannel | null = null;
 const FLUSH_DEBOUNCE_MS = 100;
 
 function cloneSeed(): MockDb {
-  console.log('[MockDB] 开始生成增强数据...');
   const enriched = enrichMockData();
-  console.log('[MockDB] 数据生成完成:', {
-    users: enriched.users.length,
-    appeals: enriched.appeals.length,
-    replies: enriched.replies.length,
-    notices: enriched.notices.length,
-    flowRecords: enriched.flowRecords.length,
-  });
-  
   return {
     _version: DATA_VERSION,
+    departments: JSON.parse(JSON.stringify(departmentTemplates)) as DepartmentCatalogEntry[],
     appeals: enriched.appeals,
     replies: enriched.replies,
     flowRecords: enriched.flowRecords,
@@ -87,7 +74,7 @@ function cloneSeed(): MockDb {
         id: 'seed_inbox_welcome',
         userId: '1',
         type: 'system',
-        title: '欢迎使用即诉即办（消息与进度已同步至当前设备）',
+        title: '欢迎使用接诉即办（消息与进度已同步至当前设备）',
         read: false,
         createTime: new Date().toLocaleString('zh-CN'),
         href: '/user/home',
@@ -107,6 +94,9 @@ function cloneSeed(): MockDb {
 }
 
 function normalize(db: MockDb): MockDb {
+  if (!db.departments) {
+    db.departments = JSON.parse(JSON.stringify(departmentTemplates)) as DepartmentCatalogEntry[];
+  }
   if (!db.inbox) db.inbox = [];
   if (!db.notices?.length) {
     db.notices = JSON.parse(JSON.stringify(mockNotices));
@@ -124,6 +114,11 @@ function normalize(db: MockDb): MockDb {
   }
   if (!db.adminConfig) {
     db.adminConfig = seedAdminConfigDefaults();
+  }
+  if (!db.adminConfig.systemSettings) {
+    db.adminConfig.systemSettings = seedSystemSettings();
+  } else {
+    db.adminConfig.systemSettings = mergePartialSystemSettings(db.adminConfig.systemSettings);
   }
   if (!db.portalAccounts) {
     db.portalAccounts = [];
@@ -178,7 +173,6 @@ export function initMockDb(): Promise<void> {
       if (legacy) {
         const legacyData = JSON.parse(legacy) as MockDb;
         if (legacyData._version !== DATA_VERSION) {
-          console.log('[MockDB] 旧版本数据，重新生成...');
           cache = cloneSeed();
         } else {
           cache = normalize(legacyData);
@@ -191,7 +185,6 @@ export function initMockDb(): Promise<void> {
       const fromIdb = await idbGet<MockDb>(IDB_KEY);
       if (fromIdb) {
         if (fromIdb._version !== DATA_VERSION) {
-          console.log('[MockDB] IndexedDB 版本不匹配，重新生成数据...');
           cache = cloneSeed();
           await writeThrough(cache);
         } else {

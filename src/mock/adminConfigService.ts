@@ -1,4 +1,5 @@
 import { getDb, saveDb } from './persist';
+import { mockLatency } from './mockLatency';
 import type {
   AdminConfigBundle,
   AppealFormField,
@@ -6,19 +7,30 @@ import type {
   BusinessRoleRow,
   DeptShowcaseExtra,
   PortalBranding,
-  AuditLogRow,
+  SystemSettings,
   ScheduledJobRow,
   KbDocument,
   ChatbotProfile,
   UserRiskMark,
 } from './adminConfigTypes';
-
-const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+import { mergePartialSystemSettings, seedSystemSettings } from './adminConfigSeed';
 
 function ensureConfig(): AdminConfigBundle {
   const db = getDb();
   if (!db.adminConfig) throw new Error('adminConfig missing');
   return db.adminConfig;
+}
+
+/** 系统设置读取（供 notice/AI 等模块使用；未初始化前勿调用） */
+export function readSystemSettings(): SystemSettings {
+  const cfg = ensureConfig();
+  const prev = cfg.systemSettings;
+  const merged = mergePartialSystemSettings(prev ?? seedSystemSettings());
+  cfg.systemSettings = merged;
+  if (!prev || JSON.stringify(prev) !== JSON.stringify(merged)) {
+    saveDb();
+  }
+  return merged;
 }
 
 function audit(operator: string, module: string, action: string, detail: string) {
@@ -36,12 +48,12 @@ function audit(operator: string, module: string, action: string, detail: string)
 
 export const adminConfigService = {
   async getBundle(): Promise<AdminConfigBundle> {
-    await delay(80);
+    await mockLatency();
     return JSON.parse(JSON.stringify(ensureConfig())) as AdminConfigBundle;
   },
 
   async updatePortalBranding(patch: Partial<PortalBranding>, operator = '管理员') {
-    await delay(100);
+    await mockLatency();
     Object.assign(ensureConfig().portalBranding, patch);
     audit(operator, '界面配置', '更新门户文案', JSON.stringify(Object.keys(patch)));
     saveDb();
@@ -49,21 +61,21 @@ export const adminConfigService = {
   },
 
   async replaceFormFields(fields: AppealFormField[], operator = '管理员') {
-    await delay(100);
+    await mockLatency();
     ensureConfig().formFields = fields.map((f, i) => ({ ...f, order: f.order ?? i + 1 }));
     audit(operator, '填报字段', '全量保存', `${fields.length} 项`);
     saveDb();
   },
 
   async replaceWorkflowNodes(nodes: WorkflowNode[], operator = '管理员') {
-    await delay(100);
+    await mockLatency();
     ensureConfig().workflowNodes = nodes;
     audit(operator, '业务流程', '保存节点', `${nodes.length} 个节点`);
     saveDb();
   },
 
   async upsertBusinessRole(row: BusinessRoleRow, operator = '管理员') {
-    await delay(80);
+    await mockLatency();
     const list = ensureConfig().businessRoles;
     const i = list.findIndex((x) => x.id === row.id);
     if (i >= 0) list[i] = row;
@@ -74,7 +86,7 @@ export const adminConfigService = {
   },
 
   async deleteBusinessRole(id: string, operator = '管理员') {
-    await delay(80);
+    await mockLatency();
     const list = ensureConfig().businessRoles;
     const i = list.findIndex((x) => x.id === id);
     if (i < 0) return false;
@@ -85,7 +97,7 @@ export const adminConfigService = {
   },
 
   async upsertDeptShowcase(row: DeptShowcaseExtra, operator = '管理员') {
-    await delay(80);
+    await mockLatency();
     const list = ensureConfig().deptShowcaseExtras;
     const i = list.findIndex((x) => x.departmentId === row.departmentId);
     if (i >= 0) list[i] = row;
@@ -96,7 +108,7 @@ export const adminConfigService = {
   },
 
   async deleteDeptShowcase(departmentId: string, operator = '管理员') {
-    await delay(80);
+    await mockLatency();
     const list = ensureConfig().deptShowcaseExtras;
     const i = list.findIndex((x) => x.departmentId === departmentId);
     if (i < 0) return false;
@@ -107,7 +119,7 @@ export const adminConfigService = {
   },
 
   async updateScheduledJob(id: string, patch: Partial<ScheduledJobRow>, operator = '管理员') {
-    await delay(80);
+    await mockLatency();
     const row = ensureConfig().scheduledJobs.find((j) => j.id === id);
     if (!row) return null;
     Object.assign(row, patch);
@@ -117,7 +129,7 @@ export const adminConfigService = {
   },
 
   async runScheduledJobDemo(id: string, operator = '管理员') {
-    await delay(200);
+    await mockLatency();
     const row = ensureConfig().scheduledJobs.find((j) => j.id === id);
     if (!row) return null;
     row.lastRun = new Date().toLocaleString('zh-CN');
@@ -128,7 +140,7 @@ export const adminConfigService = {
   },
 
   async upsertKbDocument(doc: KbDocument, operator = '管理员') {
-    await delay(80);
+    await mockLatency();
     const list = ensureConfig().kbDocuments;
     const i = list.findIndex((x) => x.id === doc.id);
     if (i >= 0) list[i] = doc;
@@ -139,7 +151,7 @@ export const adminConfigService = {
   },
 
   async deleteKbDocument(id: string, operator = '管理员') {
-    await delay(60);
+    await mockLatency();
     const list = ensureConfig().kbDocuments;
     const i = list.findIndex((x) => x.id === id);
     if (i < 0) return false;
@@ -150,7 +162,7 @@ export const adminConfigService = {
   },
 
   async upsertChatbotProfile(row: ChatbotProfile, operator = '管理员') {
-    await delay(80);
+    await mockLatency();
     const list = ensureConfig().chatbotProfiles;
     const i = list.findIndex((x) => x.id === row.id);
     if (i >= 0) list[i] = row;
@@ -161,7 +173,7 @@ export const adminConfigService = {
   },
 
   async deleteChatbotProfile(id: string, operator = '管理员') {
-    await delay(60);
+    await mockLatency();
     const list = ensureConfig().chatbotProfiles;
     const i = list.findIndex((x) => x.id === id);
     if (i < 0) return false;
@@ -172,7 +184,7 @@ export const adminConfigService = {
   },
 
   async upsertUserRiskMark(row: UserRiskMark, operator = '管理员') {
-    await delay(80);
+    await mockLatency();
     const list = ensureConfig().userRiskMarks;
     const i = list.findIndex((x) => x.userId === row.userId);
     row.updatedAt = new Date().toLocaleDateString('zh-CN');
@@ -184,7 +196,7 @@ export const adminConfigService = {
   },
 
   async deleteUserRiskMark(userId: string, operator = '管理员') {
-    await delay(60);
+    await mockLatency();
     const list = ensureConfig().userRiskMarks;
     const i = list.findIndex((x) => x.userId === userId);
     if (i < 0) return false;
@@ -196,7 +208,40 @@ export const adminConfigService = {
 
   /** 用户端读取门户展示文案（无需登录） */
   async getPortalBrandingPublic(): Promise<PortalBranding> {
-    await delay(0);
+    await mockLatency();
     return { ...ensureConfig().portalBranding };
+  },
+
+  async getSystemSettings(): Promise<SystemSettings> {
+    await mockLatency();
+    return JSON.parse(JSON.stringify(readSystemSettings())) as SystemSettings;
+  },
+
+  async replaceSystemSettings(next: SystemSettings, operator = '管理员') {
+    await mockLatency();
+    ensureConfig().systemSettings = JSON.parse(JSON.stringify(next)) as SystemSettings;
+    audit(operator, '系统设置', '保存配置', 'systemSettings');
+    saveDb();
+    return readSystemSettings();
+  },
+
+  /** 门户展示：平台名 / 学校名 / 标语 / Logo（无需登录） */
+  async getPlatformIdentityPublic(): Promise<SystemSettings['basic']> {
+    await mockLatency();
+    const b = readSystemSettings().basic;
+    return { ...b };
+  },
+
+  async getSensitiveLexicon(): Promise<string[]> {
+    await mockLatency();
+    return [...getDb().sensitiveLexicon];
+  },
+
+  async replaceSensitiveLexicon(words: string[], operator = '管理员') {
+    await mockLatency();
+    const next = [...new Set(words.map((w) => w.trim()).filter(Boolean))];
+    getDb().sensitiveLexicon = next;
+    audit(operator, '系统设置', '敏感词库', `${next.length} 条`);
+    saveDb();
   },
 };

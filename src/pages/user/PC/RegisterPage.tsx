@@ -6,6 +6,7 @@ import { useAppStore } from '@/store';
 import { useIsMobileLayout } from '@/context/MobileLayoutContext';
 import MobileSubPageScaffold from '@/components/mobile/MobileSubPageScaffold';
 import { PortalButton, PortalSelect } from './ui';
+import { portalToast } from './shell/portalFeedbackStore';
 
 function mapRegisterRole(r: string): User['role'] {
   if (r === 'teacher') return 'teacher';
@@ -17,7 +18,6 @@ export default function RegisterPage() {
   const isMobile = useIsMobileLayout();
   const login = useAppStore((s) => s.login);
   const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState('');
   const [role, setRole] = useState('student');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -28,13 +28,12 @@ export default function RegisterPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErr('');
     if (password !== confirm) {
-      setErr('两次密码不一致');
+      portalToast.error('两次密码不一致');
       return;
     }
     if (username.length < 4 || username.length > 20) {
-      setErr('用户名 4–20 字符');
+      portalToast.error('用户名 4–20 字符');
       return;
     }
     setLoading(true);
@@ -47,10 +46,11 @@ export default function RegisterPage() {
         role: mapRegisterRole(role),
       });
       if (!res.success) {
-        setErr(res.message);
+        portalToast.error(res.message);
         return;
       }
       login(res.data);
+      portalToast.success('注册成功，已自动登录');
       navigate('/user/home');
     } finally {
       setLoading(false);
@@ -61,10 +61,9 @@ export default function RegisterPage() {
     <div className={`rounded-2xl border border-outline-variant/20 bg-surface-container-lowest shadow-lg ${isMobile ? 'p-5' : 'p-8'}`}>
       <div className={`text-center ${isMobile ? 'mb-6' : 'mb-8'}`}>
         <h1 className={`font-headline font-bold text-on-surface ${isMobile ? 'sr-only' : 'text-2xl'}`}>用户注册</h1>
-        {!isMobile ? <p className="mt-1 text-sm text-on-surface-variant">兰途接诉即办</p> : null}
-        {isMobile ? <p className="text-sm text-on-surface-variant">兰途接诉即办</p> : null}
+        {!isMobile ? <p className="mt-1 text-sm text-on-surface-variant">接诉即办</p> : null}
+        {isMobile ? <p className="text-sm text-on-surface-variant">接诉即办</p> : null}
       </div>
-          {err ? <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{err}</p> : null}
           <form onSubmit={submit} className="space-y-4">
             <div>
               <label className="mb-1 block text-xs font-bold text-on-surface-variant">用户类型</label>

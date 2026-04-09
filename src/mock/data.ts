@@ -1,4 +1,14 @@
-import type { User, Department, Appeal, Reply, QuestionType, Notice, AIRecommend, FlowRecord } from './types';
+import type {
+  User,
+  Department,
+  DepartmentCatalogEntry,
+  Appeal,
+  Reply,
+  QuestionType,
+  Notice,
+  AIRecommend,
+  FlowRecord,
+} from './types';
 
 export const mockUsers: User[] = [
   {
@@ -76,7 +86,7 @@ export const mockUsers: User[] = [
 ];
 
 /** 部门静态信息；受理数/答复数/评分由 enrichDepartmentsFromAppeals 按当前诉求快照计算 */
-export const departmentTemplates: Omit<Department, '受理数' | '答复数' | '评分'>[] = [
+export const departmentTemplates: DepartmentCatalogEntry[] = [
   {
     id: 'dept1',
     name: '教务处',
@@ -139,8 +149,11 @@ export const departmentTemplates: Omit<Department, '受理数' | '答复数' | '
   },
 ];
 
-export function enrichDepartmentsFromAppeals(appeals: Appeal[]): Department[] {
-  return departmentTemplates.map((t) => {
+export function enrichDepartmentsFromAppeals(
+  catalog: DepartmentCatalogEntry[],
+  appeals: Appeal[],
+): Department[] {
+  return catalog.map((t) => {
     const mine = appeals.filter((a) => a.departmentId === t.id);
     const 受理数 = mine.length;
     const 答复数 = mine.filter((a) => a.status === 'replied').length;
@@ -622,7 +635,7 @@ export const mockAppeals: Appeal[] = [
   },
 ];
 
-export const mockDepartments: Department[] = enrichDepartmentsFromAppeals(mockAppeals);
+export const mockDepartments: Department[] = enrichDepartmentsFromAppeals(departmentTemplates, mockAppeals);
 
 export const mockQuestionTypes: QuestionType[] = deriveQuestionTypeCounts(mockAppeals);
 

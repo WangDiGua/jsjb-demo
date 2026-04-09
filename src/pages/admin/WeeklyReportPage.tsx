@@ -22,7 +22,6 @@ import isoWeek from 'dayjs/plugin/isoWeek';
 import {
   BellOutlined,
   CloudDownloadOutlined,
-  FileTextOutlined,
   ReloadOutlined,
   SaveOutlined,
 } from '@ant-design/icons';
@@ -146,14 +145,6 @@ export default function WeeklyReportPage() {
     message.success('已下载 Word 兼容文档（HTML，可用 Word 打开另存为 docx）');
   };
 
-  const handleDownloadPptOutline = () => {
-    if (!report) return;
-    const txt = weeklyReportService.buildPptOutline(report);
-    const safe = report.weekLabel.replace(/[/\\?%*:|"<>]/g, '_');
-    downloadText(txt, `${safe}_PPT大纲.txt`, 'text/plain;charset=utf-8');
-    message.success('已下载 PPT 大纲（文本，可粘贴到 PowerPoint）');
-  };
-
   return (
     <div className="weekly-report-page min-h-full pb-10">
       <AdminPageHeader
@@ -187,9 +178,6 @@ export default function WeeklyReportPage() {
             ) : null}
             <Button icon={<CloudDownloadOutlined />} disabled={!report} onClick={handleDownloadWord}>
               下载 Word
-            </Button>
-            <Button icon={<FileTextOutlined />} disabled={!report} onClick={handleDownloadPptOutline}>
-              下载 PPT 大纲
             </Button>
           </Space>
         }
@@ -324,7 +312,7 @@ export default function WeeklyReportPage() {
               </Card>
             </Col>
             <Col xs={24} lg={12}>
-              <Card title="单位即诉即办（本周受理/办结）" className="rounded-xl border-outline-variant/20 shadow-sm">
+              <Card title="单位接诉即办（本周受理/办结）" className="rounded-xl border-outline-variant/20 shadow-sm">
                 <Table
                   size="small"
                   pagination={false}

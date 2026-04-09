@@ -27,7 +27,7 @@ const allUsers = [...existingUsers, ...newUsers];
 console.log(`用户数据生成完成: ${allUsers.length} 个用户`);
 
 console.log('生成部门数据...');
-const allDepartments: Department[] = enrichDepartmentsFromAppeals([]);
+const allDepartments: Department[] = enrichDepartmentsFromAppeals(departmentTemplates, []);
 console.log(`部门数据生成完成: ${allDepartments.length} 个部门`);
 
 console.log('生成诉求数据...');

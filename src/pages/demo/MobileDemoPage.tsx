@@ -61,7 +61,7 @@ export default function MobileDemoPage() {
           <div className="device-frame">
             <iframe
               className="device-screen jsjb-device-iframe"
-              title="即诉即办 移动端"
+              title="接诉即办 移动端"
               src={iframeSrc}
             />
           </div>

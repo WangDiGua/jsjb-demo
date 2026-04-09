@@ -1,6 +1,6 @@
 import type { PortalBranding } from '@/mock/adminConfigTypes';
 import { getDb } from '@/mock/persist';
-import type { Appeal, Department, Notice, QuestionType } from '@/mock/types';
+import type { Appeal, Department, DepartmentShowcaseRow, Notice, QuestionType } from '@/mock/types';
 import type { MetadataDisplayLocale } from '@/store/preferencesStore';
 
 function sliceBundle(locale: MetadataDisplayLocale) {
@@ -13,6 +13,34 @@ export function resolveDepartmentI18n(dept: Department, locale: MetadataDisplayL
   const tr = b?.departments[dept.id];
   if (!tr) return dept;
   return { ...dept, name: tr.name, description: tr.description };
+}
+
+/** 部门风采列表：主数据译文 + 风采文案译文（heroTitle / 快捷入口标签） */
+export function resolveDepartmentShowcaseRow(row: DepartmentShowcaseRow, locale: MetadataDisplayLocale): DepartmentShowcaseRow {
+  const core = resolveDepartmentI18n(row, locale);
+  const base: DepartmentShowcaseRow = {
+    ...row,
+    ...core,
+    showcaseHeroTitle: row.showcaseHeroTitle,
+    showcasePhone: row.showcasePhone,
+    showcaseShortcuts: row.showcaseShortcuts?.map((s) => ({ ...s })),
+  };
+  if (locale === 'zh') return base;
+  const tr = getDb().metadataI18n?.[locale]?.deptShowcase[row.id];
+  if (!tr) return base;
+  const sc = base.showcaseShortcuts;
+  const shortcuts =
+    sc && tr.shortcuts?.length === sc.length
+      ? sc.map((s, i) => ({
+          label: tr.shortcuts[i]?.label?.trim() || s.label,
+          href: s.href,
+        }))
+      : sc;
+  return {
+    ...base,
+    showcaseHeroTitle: tr.heroTitle?.trim() || base.showcaseHeroTitle,
+    showcaseShortcuts: shortcuts,
+  };
 }
 
 export function resolveQuestionTypeLabel(type: QuestionType, locale: MetadataDisplayLocale): string {

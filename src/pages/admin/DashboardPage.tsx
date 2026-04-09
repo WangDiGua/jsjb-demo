@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Table, Progress, Skeleton } from 'antd';
+import { Button, Table, Progress, Skeleton, message } from 'antd';
 import { statisticsService, appealService } from '@/mock';
 import type { Statistics } from '@/mock/types';
 import type { Appeal } from '@/mock/types';
@@ -62,6 +62,8 @@ export default function DashboardPage() {
           setTodoAppeals([]);
           setRecent([]);
         }
+      } catch (e) {
+        message.error(e instanceof Error ? e.message : '数据概览加载失败');
       } finally {
         if (showSpinner) setLoading(false);
       }
@@ -375,16 +377,17 @@ export default function DashboardPage() {
                 {
                   title: '操作',
                   key: 'op',
-                  width: 80,
+                  width: 100,
                   align: 'right' as const,
-                  render: (_, record) => (
-                    <button
-                      type="button"
-                      className="text-sm font-bold text-primary opacity-70 transition-opacity hover:opacity-100"
+                  render: (_, record: Appeal) => (
+                    <Button
+                      type="default"
+                      size="small"
+                      className="min-h-8 rounded-lg border-primary/30 px-3 font-semibold text-primary shadow-none hover:border-primary/50 hover:bg-primary/[0.08] hover:text-primary"
                       onClick={() => window.open(`/user/appeal/detail/${record.id}`, '_blank')}
                     >
                       查看
-                    </button>
+                    </Button>
                   ),
                 },
               ]}

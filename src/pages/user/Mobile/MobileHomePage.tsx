@@ -79,7 +79,7 @@ export default function MobileHomePage() {
       try {
         const [pub, n] = await Promise.all([
           appealService.getPublicAppeals({ pageSize: 10 }),
-          noticeService.getNotices(),
+          noticeService.getNoticesForPublic(),
         ]);
         setHot(pub.data);
         setNotices(n.slice(0, 6));
@@ -128,15 +128,12 @@ export default function MobileHomePage() {
     navigate(q ? `/user/search?q=${encodeURIComponent(q)}` : '/user/search');
   };
 
-  const showMessageHint =
-    Boolean(currentUser) && (unread > 0 || mySummary.pending > 0);
-
   return (
     <div className="min-h-full bg-surface font-body text-on-surface antialiased">
       <header className="sticky top-0 z-40 border-b border-outline-variant/20 bg-surface/90 shadow-[0_1px_0_rgba(15,35,52,0.06)] backdrop-blur-xl m-portal-glass-header dark:border-outline-variant/25 dark:shadow-[0_1px_0_rgba(0,0,0,0.2)]">
         <div className="flex min-h-[3.5rem] w-full max-w-full items-center justify-between pb-1.5 pl-[max(1rem,env(safe-area-inset-left,0px))] pr-[max(1rem,env(safe-area-inset-right,0px))] pt-0.5">
           <span className="font-headline text-[1.05rem] font-bold tracking-tight text-primary">
-            兰途接诉即办
+            接诉即办
           </span>
           <div className="flex items-center gap-2">
             {currentUser && canAccessAdmin(currentUser.role) ? (
@@ -152,11 +149,21 @@ export default function MobileHomePage() {
             <button
               type="button"
               className="relative flex h-10 w-10 items-center justify-center rounded-full bg-surface-container-high text-on-surface-variant transition-colors active:bg-surface-container-high/80"
-              aria-label="消息"
+              aria-label={
+                currentUser && unread > 0
+                  ? `消息，${unread} 条未读`
+                  : currentUser && mySummary.pending > 0
+                    ? `消息，${mySummary.pending} 项待办`
+                    : '消息'
+              }
               onClick={() => navigate(currentUser ? '/user/appeal/my' : '/user/login')}
             >
               <span className="material-symbols-outlined text-[22px] leading-none">notifications</span>
-              {showMessageHint ? (
+              {currentUser && unread > 0 ? (
+                <span className="pointer-events-none absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold tabular-nums leading-none text-white shadow-sm ring-2 ring-surface-container-high dark:ring-surface-container-high">
+                  {unread > 99 ? '99+' : unread}
+                </span>
+              ) : currentUser && mySummary.pending > 0 ? (
                 <span
                   className="pointer-events-none absolute -right-0.5 -top-0.5 h-2.5 min-w-2.5 rounded-full bg-red-500 shadow-sm ring-2 ring-surface-container-high dark:ring-surface-container-high"
                   aria-hidden
@@ -239,7 +246,7 @@ export default function MobileHomePage() {
           />
           <div className="relative z-10 max-w-[min(100%,280px)]">
             <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-white/75">校园共治</p>
-            <h1 className="mb-2 font-headline text-[1.35rem] font-bold leading-snug">欢迎使用即诉即办</h1>
+            <h1 className="mb-2 font-headline text-[1.35rem] font-bold leading-snug">欢迎使用接诉即办</h1>
             <p className="mb-5 text-[13px] leading-relaxed text-white/88">{heroSub}</p>
             <button
               type="button"

@@ -1,5 +1,6 @@
 import type {
   Appeal,
+  DepartmentCatalogEntry,
   FlowRecord,
   InboxItem,
   Notice,
@@ -10,6 +11,7 @@ import type {
   User,
   PortalRegisteredAccount,
   WeeklyReportSnapshot,
+  DepartmentShowcaseRow,
 } from './types';
 import type {
   MetadataI18nBundle,
@@ -19,6 +21,7 @@ import type {
 } from './metadataI18nTypes';
 import { mockUsers, enrichDepartmentsFromAppeals, deriveQuestionTypeCounts } from './data';
 import { getDb, saveDb } from './persist';
+import { mockLatency } from './mockLatency';
 import {
   canAuditAppealReplies,
   isHandlerScope,
@@ -29,6 +32,12 @@ import {
   canViewAllData,
 } from './roles';
 import { aiService } from './aiGlm';
+import { readSystemSettings } from './adminConfigService';
+
+function listDepartmentsFromDb() {
+  const db = getDb();
+  return enrichDepartmentsFromAppeals(db.departments, db.appeals);
+}
 
 /** 管理端「转派」仅适用于在办工单；退回/待审答复/已办结/撤销等不可转派 */
 export const APPEAL_STATUSES_ALLOW_TRANSFER: Appeal['status'][] = ['pending', 'accepted', 'processing'];
@@ -115,8 +124,6 @@ function notifyReplyAuditPending(appeal: { id: string; title: string }) {
   }
 }
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
 const DEMO_PASSWORD = '123456';
 
 function findRegisteredAccount(username: string): PortalRegisteredAccount | undefined {
@@ -136,7 +143,7 @@ export const userService = {
     email: string;
     role: User['role'];
   }) {
-    await delay(350);
+    await mockLatency();
     const username = payload.username.trim();
     if (username.length < 4 || username.length > 20) {
       return { success: false as const, message: '用户名长度应为 4～20 字符' };
@@ -167,7 +174,7 @@ export const userService = {
   },
 
   async login(username: string, password: string) {
-    await delay(300);
+    await mockLatency();
     const uname = username.trim();
     const seed = seedUserByUsername(uname);
     if (seed) {
@@ -187,19 +194,19 @@ export const userService = {
   },
 
   async getUserInfo(id: string) {
-    await delay(200);
+    await mockLatency();
     const fromSeed = mockUsers.find((u) => u.id === id);
     if (fromSeed) return fromSeed;
     return getDb().portalAccounts.find((a) => a.user.id === id)?.user ?? null;
   },
 
   async getCurrentUser() {
-    await delay(200);
+    await mockLatency();
     return mockUsers[0];
   },
 
   async phoneLogin(_phone: string, _captcha: string) {
-    await delay(300);
+    await mockLatency();
     return { success: true as const, data: mockUsers[0], token: 'mock_phone_token' };
   },
 };
@@ -208,22 +215,99 @@ export type AppealOperator = { operatorId: string; operatorName: string };
 
 export const departmentService = {
   async getDepartments() {
-    await delay(200);
-    return enrichDepartmentsFromAppeals(getDb().appeals);
+    await mockLatency();
+    return listDepartmentsFromDb();
+  },
+
+  /**
+   * 用户端「部门风采」：仅展示已在管理端绑定风采的部门（与 deptShowcaseExtras 条数一致），
+   * 顺序与后台配置列表相同；主数据中已删除的部门对应配置会被跳过。
+   */
+  async getDepartmentsForShowcase() {
+    await mockLatency();
+    const depts = listDepartmentsFromDb();
+    const extras = getDb().adminConfig?.deptShowcaseExtras ?? [];
+    if (extras.length === 0) return [];
+    const byId = new Map(depts.map((d) => [d.id, d]));
+    const out: DepartmentShowcaseRow[] = [];
+    for (const ex of extras) {
+      const d = byId.get(ex.departmentId);
+      if (!d) continue;
+      const tel = ex.linkTel?.trim();
+      out.push({
+        ...d,
+        showcaseHeroTitle: ex.heroTitle,
+        ...(tel ? { showcasePhone: tel } : {}),
+        ...(ex.shortcuts?.length ? { showcaseShortcuts: ex.shortcuts.map((s) => ({ ...s })) } : {}),
+      });
+    }
+    return out;
   },
 
   async getDepartment(id: string) {
-    await delay(200);
-    return enrichDepartmentsFromAppeals(getDb().appeals).find((d) => d.id === id) || null;
+    await mockLatency();
+    return listDepartmentsFromDb().find((d) => d.id === id) || null;
   },
 
   async getDepartmentRankings() {
-    await delay(200);
-    const deps = enrichDepartmentsFromAppeals(getDb().appeals);
+    await mockLatency();
+    const deps = listDepartmentsFromDb();
     return {
       受理榜: [...deps].sort((a, b) => b.受理数 - a.受理数),
       答复榜: [...deps].sort((a, b) => b.答复数 - a.答复数),
     };
+  },
+
+  async createDepartment(payload: Omit<DepartmentCatalogEntry, 'id'>) {
+    await mockLatency();
+    const db = getDb();
+    const id = `dept-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+    const row: DepartmentCatalogEntry = {
+      id,
+      name: payload.name.trim(),
+      type: payload.type,
+      description: payload.description?.trim() ?? '',
+      phone: payload.phone?.trim() ?? '',
+      email: payload.email?.trim() ?? '',
+      address: payload.address?.trim() ?? '',
+      avatar: payload.avatar,
+    };
+    db.departments.push(row);
+    saveDb();
+    return enrichDepartmentsFromAppeals(db.departments, db.appeals).find((d) => d.id === id)!;
+  },
+
+  async updateDepartment(id: string, patch: Partial<Omit<DepartmentCatalogEntry, 'id'>>) {
+    await mockLatency();
+    const db = getDb();
+    const row = db.departments.find((d) => d.id === id);
+    if (!row) throw new Error('部门不存在');
+    if (patch.name !== undefined) {
+      row.name = String(patch.name).trim();
+      for (const a of db.appeals) {
+        if (a.departmentId === id) a.departmentName = row.name;
+      }
+    }
+    if (patch.type !== undefined) row.type = patch.type;
+    if (patch.description !== undefined) row.description = String(patch.description);
+    if (patch.phone !== undefined) row.phone = String(patch.phone);
+    if (patch.email !== undefined) row.email = String(patch.email);
+    if (patch.address !== undefined) row.address = String(patch.address);
+    if (patch.avatar !== undefined) row.avatar = patch.avatar;
+    saveDb();
+    return enrichDepartmentsFromAppeals(db.departments, db.appeals).find((d) => d.id === id)!;
+  },
+
+  async deleteDepartment(id: string) {
+    await mockLatency();
+    const db = getDb();
+    if (db.appeals.some((a) => a.departmentId === id)) {
+      throw new Error('该部门下仍有诉求记录，无法删除');
+    }
+    const idx = db.departments.findIndex((d) => d.id === id);
+    if (idx < 0) throw new Error('部门不存在');
+    db.departments.splice(idx, 1);
+    saveDb();
   },
 };
 
@@ -691,7 +775,7 @@ function buildWeeklyReportSnapshot(monday: Date): WeeklyReportSnapshot {
     `本周（${weekStart}～${weekEnd}）诉求受理 ${诉求受理总量} 件，办结 ${办结总量} 件，按期测算办结率约 ${办结率}%。`,
     `平均响应 ${平均响应时长} 小时、平均处理 ${平均处理时长} 小时；用户评价 ${满意度评价统计.评价条数} 条，均分 ${满意度评价统计.平均分}。`,
     `${topTypeLine}；本期纳入督办与领导关注相关事项 ${本期督办.length} 条。`,
-    '以下为各单位即诉即办工作量与质量结构的自动汇总，供校办与相关单位对照改进（演示环境为本地聚合，生产可对接调度任务与邮件/企业微信）。',
+    '以下为各单位接诉即办工作量与质量结构的自动汇总，供校办与相关单位对照改进（演示环境为本地聚合，生产可对接调度任务与邮件/企业微信）。',
   ].join('');
 
   const id = `wr_${weekStart}`;
@@ -744,7 +828,7 @@ function weeklyReportToWordHtml(r: WeeklyReportSnapshot): string {
 <h2>四、真问深答</h2>${r.真问深答.map((x) => `<p><strong>${esc(x.title)}</strong><br/>诉求摘要：${esc(x.excerpt)}<br/>答复摘录：${esc(x.replyExcerpt)}</p>`,
 ).join('')}
 <h2>五、本期督办</h2>${r.本期督办.map((x) => `<p><strong>${esc(x.title)}</strong><br/>${esc(x.detail)}</p>`).join('') || '<p>—</p>'}
-<h2>六、单位即诉即办</h2><table style="border-collapse:collapse;">${row(['单位', '受理', '办结', '办结率%', '平均处理(小时)'])}${deptRows}</table>
+<h2>六、单位接诉即办</h2><table style="border-collapse:collapse;">${row(['单位', '受理', '办结', '办结率%', '平均处理(小时)'])}${deptRows}</table>
 <h2>七、优秀回复案例</h2>${r.优秀回复案例.map((x) => `<p><strong>${esc(x.title)}</strong>（${x.rating} 星）<br/>${esc(x.replyExcerpt)}</p>`,
 ).join('') || '<p>—</p>'}
 <h2>八、部门处理效率排名</h2><table style="border-collapse:collapse;">${row(['部门', '本周办结', '平均处理(小时)'])}${rankRows}</table>
@@ -787,24 +871,24 @@ export const weeklyReportService = {
 
   /** 按所选日期所在周生成快照（不落库） */
   async previewForDate(anchor: Date) {
-    await delay(50);
+    await mockLatency();
     const monday = mondayOfWeekContaining(anchor);
     return buildWeeklyReportSnapshot(monday);
   },
 
   async list() {
-    await delay(80);
+    await mockLatency();
     return [...getDb().weeklyReports!].sort((a, b) => b.weekStart.localeCompare(a.weekStart));
   },
 
   async getById(id: string) {
-    await delay(40);
+    await mockLatency();
     return getDb().weeklyReports!.find((x) => x.id === id) ?? null;
   },
 
   /** 生成并覆盖同周已存记录 */
   async generateAndSave(anchor: Date, actor: User | null) {
-    await delay(120);
+    await mockLatency();
     if (!actor || !canViewAllData(actor.role)) {
       throw new Error('仅超管或校办可生成与归档周报');
     }
@@ -830,7 +914,7 @@ export const weeklyReportService = {
 
   /** 向校办、超管及二级单位领导推送站内信（演示） */
   async notifyManagers(reportId: string, actor: User | null) {
-    await delay(80);
+    await mockLatency();
     if (!actor || !canViewAllData(actor.role)) {
       throw new Error('仅超管或校办可推送周报');
     }
@@ -871,8 +955,8 @@ export const appealService = {
     },
     viewer?: User | null,
   ) {
-    await delay(300);
-    let filtered = [...filterAppealsForViewer(getDb().appeals, viewer)];
+    await mockLatency();
+    let filtered = filterAppealsForViewer(getDb().appeals, viewer);
 
     if (params?.status && params.status !== 'all') {
       filtered = filtered.filter((a) => a.status === params.status);
@@ -904,7 +988,7 @@ export const appealService = {
    * 排序：创建时间升序（优先展示积压更久的单）。
    */
   async getDashboardInProgressAppeals(viewer: User | null, limit = 12) {
-    await delay(150);
+    await mockLatency();
     const list = filterAppealsForViewer(getDb().appeals, viewer).filter((a) =>
       DASHBOARD_IN_PROGRESS_STATUSES.includes(a.status),
     );
@@ -914,7 +998,7 @@ export const appealService = {
 
   /** 数据概览「实时诉求办理」：可见范围内按更新时间倒序，与「任意状态前 5 条」无关 */
   async getDashboardRecentAppeals(viewer: User | null, limit = 8) {
-    await delay(150);
+    await mockLatency();
     const list = [...filterAppealsForViewer(getDb().appeals, viewer)];
     list.sort((a, b) => parseAppealDateTime(b.updateTime) - parseAppealDateTime(a.updateTime));
     return list.slice(0, limit);
@@ -922,7 +1006,7 @@ export const appealService = {
 
   /** 管理端侧栏红点：待受理数量（已按角色范围过滤） */
   async getPendingCountForViewer(viewer: User | null) {
-    await delay(0);
+    await mockLatency();
     if (!viewer) return 0;
     const scoped = filterAppealsForViewer(getDb().appeals, viewer);
     return scoped.filter((a) => a.status === 'pending').length;
@@ -937,7 +1021,7 @@ export const appealService = {
     /** 默认按工单编号/入库顺序；popular 按公开浏览量降序 */
     sort?: 'default' | 'popular';
   }) {
-    await delay(300);
+    await mockLatency();
     let filtered = getDb().appeals.filter((a) => a.isPublic && a.status === 'replied');
 
     if (params?.type && params.type !== 'all') {
@@ -967,13 +1051,13 @@ export const appealService = {
   },
 
   async getAppeal(id: string) {
-    await delay(200);
+    await mockLatency();
     return getDb().appeals.find((a) => a.id === id) || null;
   },
 
   /** 详情页浏览量 +1（写入本地业务库） */
   async incrementAppealView(id: string) {
-    await delay(0);
+    await mockLatency();
     const appeal = getDb().appeals.find((a) => a.id === id);
     if (!appeal) return;
     appeal.浏览量 = (appeal.浏览量 ?? 0) + 1;
@@ -982,7 +1066,7 @@ export const appealService = {
 
   /** 用户催办：通知承办部门处理员 */
   async nudgeAppeal(appealId: string, user: { id: string; nickname: string }) {
-    await delay(250);
+    await mockLatency();
     const appeal = getDb().appeals.find((a) => a.id === appealId);
     if (!appeal || appeal.userId !== user.id) return { ok: false as const, message: '无权操作' };
     if (!['pending', 'accepted', 'processing', 'reply_draft'].includes(appeal.status)) {
@@ -1014,7 +1098,7 @@ export const appealService = {
   },
 
   async getMyAppeals(userId: string) {
-    await delay(300);
+    await mockLatency();
     return getDb().appeals.filter((a) => a.userId === userId);
   },
 
@@ -1029,7 +1113,7 @@ export const appealService = {
     if (!opts?.skipSensitiveCheck) {
       await requireContentPassesSensitiveCheck(combined);
     }
-    await delay(500);
+    await mockLatency();
     const appeals = getDb().appeals;
     const newAppeal = {
       id: 'appeal' + Date.now(),
@@ -1058,7 +1142,7 @@ export const appealService = {
   },
 
   async withdrawAppeal(id: string) {
-    await delay(300);
+    await mockLatency();
     const appeal = getDb().appeals.find((a) => a.id === id);
     if (!appeal || appeal.status !== 'pending') return null;
     appeal.status = 'withdrawn';
@@ -1068,7 +1152,7 @@ export const appealService = {
   },
 
   async deleteAppeal(id: string) {
-    await delay(300);
+    await mockLatency();
     const appeals = getDb().appeals;
     const index = appeals.findIndex((a) => a.id === id);
     if (index < 0) return false;
@@ -1084,7 +1168,7 @@ export const appealService = {
     if (c.length > 0) {
       await requireContentPassesSensitiveCheck(c);
     }
-    await delay(300);
+    await mockLatency();
     const appeal = getDb().appeals.find((a) => a.id === id);
     if (appeal) {
       appeal.评价 = { rating, comment, time: new Date().toLocaleString('zh-CN') };
@@ -1095,7 +1179,7 @@ export const appealService = {
   },
 
   async acceptAppeal(id: string, operator: AppealOperator) {
-    await delay(250);
+    await mockLatency();
     const appeal = getDb().appeals.find((a) => a.id === id);
     if (!appeal || appeal.status !== 'pending') return null;
     appeal.status = 'accepted';
@@ -1121,7 +1205,7 @@ export const appealService = {
 
   async returnAppeal(id: string, reason: string, operator: AppealOperator) {
     await requireContentPassesSensitiveCheck(reason.trim());
-    await delay(250);
+    await mockLatency();
     const appeal = getDb().appeals.find((a) => a.id === id);
     if (!appeal || appeal.status !== 'pending') return null;
     appeal.status = 'returned';
@@ -1145,9 +1229,9 @@ export const appealService = {
   },
 
   async transferAppeal(id: string, departmentId: string, operator: AppealOperator) {
-    await delay(250);
+    await mockLatency();
     const appeal = getDb().appeals.find((a) => a.id === id);
-    const dept = enrichDepartmentsFromAppeals(getDb().appeals).find((d) => d.id === departmentId);
+    const dept = listDepartmentsFromDb().find((d) => d.id === departmentId);
     if (!appeal || !dept || !APPEAL_STATUSES_ALLOW_TRANSFER.includes(appeal.status)) return null;
     appeal.departmentId = dept.id;
     appeal.departmentName = dept.name;
@@ -1174,7 +1258,7 @@ export const appealService = {
   /** 处理员提交答复草稿，进入待审核（用户端不可见正文直到通过） */
   async submitReplyForReview(id: string, content: string, isPublic: boolean, operator: AppealOperator) {
     await requireContentPassesSensitiveCheck(content.trim());
-    await delay(350);
+    await mockLatency();
     const db = getDb();
     const appeal = db.appeals.find((a) => a.id === id);
     if (!appeal || (appeal.status !== 'accepted' && appeal.status !== 'processing')) return null;
@@ -1204,7 +1288,7 @@ export const appealService = {
   },
 
   async approveReply(appealId: string, auditor: AppealOperator) {
-    await delay(280);
+    await mockLatency();
     const db = getDb();
     const appeal = db.appeals.find((a) => a.id === appealId);
     if (!appeal || appeal.status !== 'reply_draft') return null;
@@ -1236,7 +1320,7 @@ export const appealService = {
   },
 
   async rejectReply(appealId: string, reason: string, auditor: AppealOperator) {
-    await delay(250);
+    await mockLatency();
     const db = getDb();
     const appeal = db.appeals.find((a) => a.id === appealId);
     if (!appeal || appeal.status !== 'reply_draft') return null;
@@ -1271,7 +1355,7 @@ export const appealService = {
   /** 办理人将重要诉求上报领导批示：记录原因/人/时，写入流程「上报」，并通知校办/超管/本部门领导待办（不新增 status，仍为 processing 等既有状态） */
   async reportToLeader(id: string, reason: string, operator: AppealOperator) {
     await requireContentPassesSensitiveCheck(reason.trim());
-    await delay(250);
+    await mockLatency();
     const appeal = getDb().appeals.find((a) => a.id === id);
     if (!appeal) return null;
     const user = mockUsers.find((u) => u.id === operator.operatorId);
@@ -1326,7 +1410,7 @@ export const appealService = {
   /** 领导对上报诉求填写批示；记录批示与人/时，流程「批示」，并通知承办部门办理人 */
   async submitLeaderInstruction(id: string, content: string, operator: AppealOperator) {
     await requireContentPassesSensitiveCheck(content.trim());
-    await delay(250);
+    await mockLatency();
     const appeal = getDb().appeals.find((a) => a.id === id);
     if (!appeal || !appeal.上报领导 || appeal.领导批示) return null;
     const user = mockUsers.find((u) => u.id === operator.operatorId);
@@ -1367,7 +1451,7 @@ export const appealService = {
   /** 办理人申请校办督办：提高督办等级并留下流程「校办关注」记录 */
   async requestSupervision(id: string, level: 'normal' | 'urgent', note: string, operator: AppealOperator) {
     await requireContentPassesSensitiveCheck(note.trim());
-    await delay(220);
+    await mockLatency();
     const appeal = getDb().appeals.find((a) => a.id === id);
     if (!appeal) return null;
     const user = mockUsers.find((u) => u.id === operator.operatorId);
@@ -1415,7 +1499,7 @@ export const appealService = {
   /** 领导办结督办：写入流程「督办」，并清除督办等级（诉求 status 不变） */
   async completeSupervision(id: string, note: string, operator: AppealOperator) {
     await requireContentPassesSensitiveCheck(note.trim());
-    await delay(220);
+    await mockLatency();
     const appeal = getDb().appeals.find((a) => a.id === id);
     if (!appeal) return null;
     const user = mockUsers.find((u) => u.id === operator.operatorId);
@@ -1461,7 +1545,7 @@ export const appealService = {
     },
     viewer: User | null,
   ) {
-    await delay(200);
+    await mockLatency();
     let filtered = filterLeaderDeskAppeals(getDb().appeals, viewer);
     if (params.keyword?.trim()) {
       const kw = params.keyword.trim().toLowerCase();
@@ -1499,7 +1583,7 @@ export const appealService = {
   },
 
   async getLeaderDeskTabCounts(viewer: User | null) {
-    await delay(0);
+    await mockLatency();
     const base = filterLeaderDeskAppeals(getDb().appeals, viewer);
     return {
       pending_instruct: base.filter((a) => Boolean(a.上报领导) && !a.领导批示).length,
@@ -1514,7 +1598,7 @@ export const appealService = {
 
 export const replyService = {
   async getReplies(appealId: string) {
-    await delay(200);
+    await mockLatency();
     return getDb()
       .replies.filter((r) => r.appealId === appealId)
       .sort((a, b) => a.createTime.localeCompare(b.createTime));
@@ -1522,7 +1606,7 @@ export const replyService = {
 
   /** 门户：诉求人仅见已发布答复；管理/本部门处理员/二级单位领导可见含草稿 */
   async getRepliesForViewer(appealId: string, viewer: User | null) {
-    await delay(200);
+    await mockLatency();
     const appeal = getDb().appeals.find((a) => a.id === appealId);
     const list = getDb()
       .replies.filter((r) => r.appealId === appealId)
@@ -1563,12 +1647,12 @@ function mergeQuestionTypesWithCounts(): QuestionType[] {
 
 export const questionTypeService = {
   async getQuestionTypes() {
-    await delay(200);
+    await mockLatency();
     return mergeQuestionTypesWithCounts();
   },
 
   async replaceQuestionTypes(types: QuestionType[]) {
-    await delay(100);
+    await mockLatency();
     getDb().questionTypes = types.map((t) => ({ ...t, count: t.count ?? 0 }));
     saveDb();
   },
@@ -1576,17 +1660,28 @@ export const questionTypeService = {
 
 export const noticeService = {
   async getNotices() {
-    await delay(200);
+    await mockLatency();
     return [...getDb().notices].sort((a, b) => b.createTime.localeCompare(a.createTime));
   },
 
+  /** 门户首页等：受系统设置「启用公告 / 置顶条数」约束 */
+  async getNoticesForPublic() {
+    await mockLatency();
+    const st = readSystemSettings();
+    if (st.notices.enabled === false) return [];
+    const sorted = [...getDb().notices].sort((a, b) => b.createTime.localeCompare(a.createTime));
+    const cap = Math.max(1, Math.min(50, Number(st.notices.pinTopCount) || 3));
+    return sorted.slice(0, cap);
+  },
+
   async getNotice(id: string) {
-    await delay(200);
+    await mockLatency();
+    if (readSystemSettings().notices.enabled === false) return null;
     return getDb().notices.find((n) => n.id === id) || null;
   },
 
   async createNotice(payload: Omit<Notice, 'id' | 'createTime'> & { id?: string }) {
-    await delay(150);
+    await mockLatency();
     const id = payload.id ?? `notice_${Date.now()}`;
     const n: Notice = {
       id,
@@ -1602,7 +1697,7 @@ export const noticeService = {
   },
 
   async updateNotice(id: string, patch: Partial<Pick<Notice, 'title' | 'content' | 'publisher' | 'attachments'>>) {
-    await delay(150);
+    await mockLatency();
     const n = getDb().notices.find((x) => x.id === id);
     if (!n) return null;
     Object.assign(n, patch);
@@ -1611,7 +1706,7 @@ export const noticeService = {
   },
 
   async deleteNotice(id: string) {
-    await delay(100);
+    await mockLatency();
     const db = getDb();
     const i = db.notices.findIndex((x) => x.id === id);
     if (i < 0) return false;
@@ -1623,37 +1718,37 @@ export const noticeService = {
 
 export const statisticsService = {
   async getStatistics() {
-    await delay(300);
+    await mockLatency();
     return deriveStatistics();
   },
 
   async getHotTopics() {
-    await delay(200);
+    await mockLatency();
     return deriveStatistics().热点词云.slice(0, 10);
   },
 
   /** 门户效能看板（公开已答复池） */
   async getPortalEfficiency() {
-    await delay(220);
+    await mockLatency();
     return derivePortalEfficiency();
   },
 };
 
 export const notificationService = {
   async list(userId: string) {
-    await delay(100);
+    await mockLatency();
     return getDb()
       .inbox.filter((i) => i.userId === userId)
       .sort((a, b) => b.createTime.localeCompare(a.createTime));
   },
 
   async unreadCount(userId: string) {
-    await delay(0);
+    await mockLatency();
     return getDb().inbox.filter((i) => i.userId === userId && !i.read).length;
   },
 
   async markRead(id: string) {
-    await delay(50);
+    await mockLatency();
     const item = getDb().inbox.find((i) => i.id === id);
     if (item) {
       item.read = true;
@@ -1662,7 +1757,7 @@ export const notificationService = {
   },
 
   async markAllRead(userId: string) {
-    await delay(50);
+    await mockLatency();
     for (const i of getDb().inbox) {
       if (i.userId === userId) i.read = true;
     }
@@ -1720,10 +1815,13 @@ function mergeMetadataBundle(input: MetadataTranslateInput, m: MetadataTranslate
 /** 元数据多语言：与 adminConfig、部门/类型/公告主数据 id 对齐 */
 export const metadataI18nService = {
   async translateAndSave(target: MetadataLocaleCode) {
-    await delay(0);
+    await mockLatency();
+    if (!readSystemSettings().ai.translation) {
+      throw new Error('系统设置中已关闭「AI 翻译」，请开启后再试');
+    }
     const db = getDb();
     const cfg = db.adminConfig;
-    const depts = enrichDepartmentsFromAppeals(db.appeals);
+    const depts = enrichDepartmentsFromAppeals(db.departments, db.appeals);
     const qTypes = mergeQuestionTypesWithCounts();
     const notices = [...db.notices].sort((a, b) => b.createTime.localeCompare(a.createTime)).slice(0, 16);
     const input: MetadataTranslateInput = {
@@ -1766,7 +1864,7 @@ export { aiService } from './aiGlm';
 
 export const flowService = {
   async getFlowRecords(appealId: string) {
-    await delay(200);
+    await mockLatency();
     return getDb().flowRecords.filter((r) => r.appealId === appealId);
   },
 };

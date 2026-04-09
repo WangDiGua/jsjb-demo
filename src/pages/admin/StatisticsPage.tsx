@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Card, Row, Col, Statistic, Table, Select, DatePicker, Button, Space } from 'antd';
+import { Card, Row, Col, Statistic, Table, Select, DatePicker, Button, Space, message } from 'antd';
 import { FileTextOutlined, CheckCircleOutlined, ClockCircleOutlined, RiseOutlined, ExportOutlined } from '@ant-design/icons';
 import { statisticsService } from '@/mock';
 import type { Statistics } from '@/mock/types';
@@ -18,6 +18,8 @@ export default function StatisticsPage() {
       try {
         const data = await statisticsService.getStatistics();
         setStats(data);
+      } catch (e) {
+        message.error(e instanceof Error ? e.message : '统计数据加载失败');
       } finally {
         setLoading(false);
       }
@@ -38,7 +40,12 @@ export default function StatisticsPage() {
               <Select.Option value="year">本年</Select.Option>
             </Select>
             <RangePicker />
-            <Button icon={<ExportOutlined />}>导出报表</Button>
+            <Button
+              icon={<ExportOutlined />}
+              onClick={() => message.success('演示环境：已生成报表导出任务（实际项目可对接下载）')}
+            >
+              导出报表
+            </Button>
           </Space>
         }
       />

@@ -31,10 +31,20 @@ export interface Department {
   email: string;
   address: string;
   avatar?: string;
- 受理数: number;
+  受理数: number;
   答复数: number;
   评分: number;
 }
+
+/** 门户列表用：主数据部门 + 管理端「部门风采」覆盖项（与 adminConfig.deptShowcaseExtras 对齐） */
+export type DepartmentShowcaseRow = Department & {
+  showcaseHeroTitle?: string;
+  showcasePhone?: string;
+  showcaseShortcuts?: { label: string; href: string }[];
+};
+
+/** 持久化静态字段；受理数/答复数/评分由诉求快照派生 */
+export type DepartmentCatalogEntry = Omit<Department, '受理数' | '答复数' | '评分'>;
 
 export interface Appeal {
   id: string;
@@ -210,6 +220,15 @@ export interface AIRecommend {
   }[];
   suggestedDepartment?: { id: string; name: string };
   suggestedType?: string;
+}
+
+/** 智能题库：相似已办结公开工单及其参考答复（管理端选用） */
+export interface ReplyReferenceItem {
+  appealId: string;
+  title: string;
+  similarity: number;
+  caseSummary: string;
+  referenceReply: string;
 }
 
 export type FlowAction =

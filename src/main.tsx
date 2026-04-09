@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ConfigProvider, Skeleton } from 'antd';
-import zhCN from 'antd/locale/zh_CN';
+import { appAntdLocale } from '@/antdAppLocale';
+import '@/bootstrapAntdLocale';
 import { initMockDb } from '@/mock/persist';
 import { appTheme } from '@/theme/appTheme';
 import { buildAntdTheme } from '@/theme/antdPreferences';
@@ -53,7 +54,7 @@ function Bootstrap() {
 
   if (!ready) {
     return (
-      <ConfigProvider theme={skeletonTheme} locale={zhCN}>
+      <ConfigProvider theme={skeletonTheme} locale={appAntdLocale}>
         <div
           style={{
             minHeight: '100vh',

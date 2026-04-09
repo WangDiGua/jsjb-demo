@@ -10,6 +10,7 @@ import {
   appealService,
 } from '@/mock/services';
 import { useAppStore } from '@/store';
+import { portalToast } from './shell/portalFeedbackStore';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { useMockDbUpdated } from '@/hooks/useMockDbUpdated';
 import {
@@ -77,7 +78,7 @@ export default function HomePage() {
           statisticsService.getStatistics(),
           appealService.getPublicAppeals({ pageSize: 6 }),
           departmentService.getDepartments(),
-          noticeService.getNotices(),
+          noticeService.getNoticesForPublic(),
           questionTypeService.getQuestionTypes(),
         ]);
         setStats({
@@ -93,6 +94,8 @@ export default function HomePage() {
           const mine = await appealService.getMyAppeals(currentUser.id);
           setMySlice(mine.slice(0, 3));
         }
+      } catch (e) {
+        portalToast.error(e instanceof Error ? e.message : '首页数据加载失败');
       } finally {
         setLoading(false);
       }
@@ -137,7 +140,7 @@ export default function HomePage() {
   return (
     <>
       {/* Hero：full-bleed 背景与顶栏同宽，避免网格在 max-w 容器两侧「突然截断」 */}
-      <section className="relative -mt-20 flex min-h-[700px] items-center overflow-hidden bg-surface-container-lowest pt-20 smart-grid-bg w-screen max-w-[100vw] ml-[calc(50%-50vw)]">
+      <section className="relative -mt-24 flex min-h-[700px] items-center overflow-hidden bg-surface-container-lowest pt-24 smart-grid-bg w-screen max-w-[100vw] ml-[calc(50%-50vw)]">
         <svg
           className="pointer-events-none absolute inset-0 h-full w-full opacity-20"
           viewBox="0 0 1000 1000"
@@ -184,7 +187,7 @@ export default function HomePage() {
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
                     <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
                   </span>
-                  <span>兰途接诉即办：实时受理中</span>
+                  <span>接诉即办：实时受理中</span>
                 </div>
                 <h1 className="mb-8 font-headline text-5xl font-extrabold leading-[1.1] text-on-surface lg:text-7xl">
                   透明校园
@@ -226,7 +229,7 @@ export default function HomePage() {
                 <p className="mb-10 max-w-3xl text-sm leading-relaxed text-on-surface-variant" role="note">
                   <span className="font-semibold text-on-surface">操作说明：</span>
                   输入问题后点「咨询助理」会进入智能助理并开始回答问题（连接模型 → 流式输出 → 完成）；点「发起诉求」进入工单填写，途中会经过「撰写正文 → AI
-                  推荐部门/类型 → 提交」等步骤，敏感词也会在输入过程中自动筛查。
+                  推荐部门/类型 → 提交」等步骤；敏感词在点击提交时检测，命中后请先修改正文再提交。
                 </p>
                 <div className="grid max-w-2xl grid-cols-3 gap-8">
                   <div className="group">
@@ -435,14 +438,14 @@ export default function HomePage() {
                     );
                   })}
             </div>
-            <div className="relative flex flex-col justify-between overflow-hidden rounded-3xl bg-on-surface p-8 text-white group">
-              <div className="absolute right-0 top-0 h-48 w-48 rounded-full bg-primary/20 blur-3xl transition-transform duration-1000 group-hover:scale-150" />
+            <div className="group relative flex flex-col justify-between overflow-hidden rounded-3xl bg-on-surface p-8 text-white dark:bg-surface-container-low dark:text-on-surface dark:ring-1 dark:ring-outline-variant/35">
+              <div className="absolute right-0 top-0 h-48 w-48 rounded-full bg-primary/20 blur-3xl transition-transform duration-1000 group-hover:scale-150 dark:bg-primary/25" />
               <div className="relative z-10">
                 <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
                   <span className="material-symbols-outlined text-white">handshake</span>
                 </div>
                 <h3 className="mb-4 text-2xl font-bold">参与校园共治</h3>
-                <p className="mb-8 text-sm leading-relaxed text-white/60">
+                <p className="mb-8 text-sm leading-relaxed text-white/60 dark:text-on-surface-variant">
                   提交诉求、查看公示、评价服务，共建透明高效的接诉即办流程。
                 </p>
                 <ul className="mb-8 space-y-4 text-sm font-medium">
@@ -464,7 +467,7 @@ export default function HomePage() {
                 variant="secondary"
                 fullWidth
                 size="hero"
-                className="relative z-10 border-0 bg-surface-container-lowest py-4 font-bold shadow-none hover:bg-surface-container-lowest/90"
+                className="relative z-10 border-0 bg-surface-container-lowest py-4 font-bold shadow-none hover:bg-surface-container-lowest/90 dark:bg-surface-container-high dark:hover:bg-surface-container-high/90"
                 onClick={() => navigate('/user/appeal/create')}
               >
                 立即发起诉求

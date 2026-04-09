@@ -2,6 +2,8 @@ export type {
   PortalRegisteredAccount,
   User,
   Department,
+  DepartmentShowcaseRow,
+  DepartmentCatalogEntry,
   Appeal,
   Reply,
   ReplyPublishStatus,

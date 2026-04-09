@@ -18,6 +18,7 @@ export default function UserPcChrome() {
         <PageOutletTransition>
           <Outlet />
         </PageOutletTransition>
+        <PortalFeedbackHost />
       </>
     );
   }
@@ -26,8 +27,10 @@ export default function UserPcChrome() {
     <div className="portal-pc portal-skin min-h-screen bg-surface font-body text-on-surface selection:bg-primary/10">
       <ScrollToTop />
       <PortalHeader />
-      {/* pt-20 与顶栏 h-20 对齐，避免内容被 fixed 遮挡；顶栏下不再叠一层 layout-py-main，否则易出现「空白缝」 */}
-      <main className="overflow-x-hidden pt-20">
+      {/*
+        顶栏 fixed h-20(5rem)，main 用 pt-24 在栏下多出 1rem 呼吸留白；全宽首屏（首页 Hero）需同步 -mt/pt，见 HomePage。
+      */}
+      <main className="overflow-x-hidden pt-24">
         <div className="mx-auto w-full max-w-[var(--layout-max,1600px)] px-[var(--layout-px,2rem)] pb-[var(--layout-py-main,2.5rem)] pt-0">
           <PageOutletTransition>
             <Outlet />

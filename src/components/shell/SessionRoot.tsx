@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { Suspense, useEffect, useRef } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import { Spin } from 'antd';
 import { useAppStore } from '@/store';
 import {
   migrateLegacyMockUserOnce,
@@ -53,5 +54,22 @@ export default function SessionRoot() {
     return () => window.removeEventListener('storage', onStorage);
   }, []);
 
-  return <Outlet />;
+  return (
+    <Suspense
+      fallback={
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: '50vh',
+          }}
+        >
+          <Spin size="large" aria-label="页面加载中" />
+        </div>
+      }
+    >
+      <Outlet />
+    </Suspense>
+  );
 }

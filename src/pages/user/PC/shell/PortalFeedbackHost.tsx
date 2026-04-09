@@ -37,7 +37,7 @@ export default function PortalFeedbackHost() {
   return (
     <>
       <div
-        className="pointer-events-none fixed right-4 top-24 z-[1000] flex w-[min(calc(100vw-2rem),24rem)] flex-col gap-3 sm:right-8"
+        className="pointer-events-none fixed left-1/2 top-24 z-[1000] flex w-[min(calc(100vw-2rem),24rem)] -translate-x-1/2 flex-col gap-3"
         aria-live="polite"
       >
         {toasts.map((t) => {

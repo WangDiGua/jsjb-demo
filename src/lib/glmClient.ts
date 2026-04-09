@@ -10,6 +10,53 @@ export function isGlmConfigured(): boolean {
   return Boolean(import.meta.env.VITE_GLM_API_KEY?.trim());
 }
 
+const GLM_TIMEOUT_MS_RAW = Number(import.meta.env.VITE_GLM_TIMEOUT_MS);
+const GLM_TIMEOUT_MS =
+  Number.isFinite(GLM_TIMEOUT_MS_RAW) && GLM_TIMEOUT_MS_RAW >= 3_000
+    ? Math.min(GLM_TIMEOUT_MS_RAW, 300_000)
+    : 45_000;
+
+/**
+ * 合并超时与外部 Abort：避免代理/API 无响应时 fetch 一直挂起导致表单长时间「提交中」。
+ */
+function mergeAbortSignals(
+  timeoutMs: number,
+  external?: AbortSignal,
+): { signal: AbortSignal; cancelTimer: () => void } {
+  const timeoutCtrl = new AbortController();
+  const tid = window.setTimeout(() => {
+    timeoutCtrl.abort(
+      new DOMException(`大模型请求超过 ${Math.round(timeoutMs / 1000)} 秒未响应`, 'TimeoutError'),
+    );
+  }, timeoutMs);
+  const cancelTimer = () => window.clearTimeout(tid);
+
+  if (!external) {
+    return { signal: timeoutCtrl.signal, cancelTimer };
+  }
+
+  if (external.aborted) {
+    cancelTimer();
+    timeoutCtrl.abort(external.reason);
+    return { signal: timeoutCtrl.signal, cancelTimer };
+  }
+
+  if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.any === 'function') {
+    return { signal: AbortSignal.any([timeoutCtrl.signal, external]), cancelTimer };
+  }
+
+  external.addEventListener(
+    'abort',
+    () => {
+      cancelTimer();
+      if (!timeoutCtrl.signal.aborted) timeoutCtrl.abort(external.reason);
+    },
+    { once: true },
+  );
+
+  return { signal: timeoutCtrl.signal, cancelTimer };
+}
+
 export async function glmChat(
   messages: { role: 'system' | 'user' | 'assistant'; content: string }[],
   opts?: { temperature?: number; maxTokens?: number },
@@ -21,20 +68,26 @@ export async function glmChat(
     throw new Error('大模型服务未配置，请联系管理员完成接入。');
   }
 
-  const res = await fetch('/glm-api/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKeyResolved}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      temperature: opts?.temperature ?? 0.5,
-      max_tokens: opts?.maxTokens ?? 2048,
-    }),
-    signal,
-  });
+  const { signal: mergedSignal, cancelTimer } = mergeAbortSignals(GLM_TIMEOUT_MS, signal);
+  let res: Response;
+  try {
+    res = await fetch('/glm-api/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKeyResolved}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages,
+        temperature: opts?.temperature ?? 0.5,
+        max_tokens: opts?.maxTokens ?? 2048,
+      }),
+      signal: mergedSignal,
+    });
+  } finally {
+    cancelTimer();
+  }
 
   if (!res.ok) {
     const t = await res.text();
@@ -69,21 +122,27 @@ export async function glmChatStream(
     throw new Error('大模型服务未配置，请联系管理员完成接入。');
   }
 
-  const res = await fetch('/glm-api/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKeyResolved}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      temperature: opts?.temperature ?? 0.5,
-      max_tokens: opts?.maxTokens ?? 2048,
-      stream: true,
-    }),
-    signal,
-  });
+  const { signal: mergedSignal, cancelTimer } = mergeAbortSignals(GLM_TIMEOUT_MS, signal);
+  let res: Response;
+  try {
+    res = await fetch('/glm-api/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKeyResolved}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages,
+        temperature: opts?.temperature ?? 0.5,
+        max_tokens: opts?.maxTokens ?? 2048,
+        stream: true,
+      }),
+      signal: mergedSignal,
+    });
+  } finally {
+    cancelTimer();
+  }
 
   if (!res.ok) {
     const t = await res.text();

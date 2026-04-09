@@ -19,7 +19,7 @@ const newUsers = generateUsers(50, existingUsers.length);
 const allUsers: User[] = [...existingUsers, ...newUsers];
 console.log(`用户数据生成完成: ${allUsers.length} 个用户 (原有 ${existingUsers.length} 个，新增 ${newUsers.length} 个)`);
 
-const allDepartments: Department[] = enrichDepartmentsFromAppeals([]);
+const allDepartments: Department[] = enrichDepartmentsFromAppeals(departmentTemplates, []);
 console.log(`部门数据生成完成: ${allDepartments.length} 个部门`);
 
 const newAppeals = generateAppeals(200, existingAppeals.length, allUsers, allDepartments);

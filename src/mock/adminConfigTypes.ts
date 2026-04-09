@@ -96,12 +96,46 @@ export interface UserRiskMark {
   updatedAt: string;
 }
 
+/** 系统设置页持久化项（与 mock DB 一并保存） */
+export interface SystemSettings {
+  basic: {
+    platformName: string;
+    schoolName: string;
+    slogan: string;
+    /** data URL 或外链，空表示无 Logo */
+    logoDataUrl: string;
+  };
+  timeouts: {
+    urgeTimeoutHours: number;
+    superviseTimeoutHours: number;
+    autoCloseDays: number;
+    smsReminder: boolean;
+    emailReminder: boolean;
+  };
+  notices: {
+    enabled: boolean;
+    /** 演示环境暂无公告审核流，仅持久化开关供后续对接 */
+    requireAudit: boolean;
+    pinTopCount: number;
+  };
+  ai: {
+    smartDispatch: boolean;
+    smartRecommend: boolean;
+    assistWrite: boolean;
+    translation: boolean;
+    modelLabel: string;
+    dailyTokenBudget: number;
+  };
+}
+
 export interface AdminConfigBundle {
   formFields: AppealFormField[];
   workflowNodes: WorkflowNode[];
   businessRoles: BusinessRoleRow[];
   deptShowcaseExtras: DeptShowcaseExtra[];
   portalBranding: PortalBranding;
+  /** 系统设置（基础/超时/公告/AI 等） */
+  systemSettings: SystemSettings;
   auditLogs: AuditLogRow[];
   scheduledJobs: ScheduledJobRow[];
   kbDocuments: KbDocument[];

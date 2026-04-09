@@ -6,7 +6,7 @@ import { useAppStore } from '@/store';
 import { useIsMobileLayout } from '@/context/MobileLayoutContext';
 import MobileSubPageScaffold from '@/components/mobile/MobileSubPageScaffold';
 import { PortalButton } from './ui';
-import { portalConfirm } from './shell/portalFeedbackStore';
+import { portalConfirm, portalToast } from './shell/portalFeedbackStore';
 import { useMockDbUpdated } from '@/hooks/useMockDbUpdated';
 
 const statusMap: Record<string, string> = {
@@ -50,6 +50,8 @@ export default function MyAppealsPage() {
     setLoading(true);
     try {
       setAppeals(await appealService.getMyAppeals(currentUser.id));
+    } catch (e) {
+      portalToast.error(e instanceof Error ? e.message : '加载失败');
     } finally {
       setLoading(false);
     }
@@ -70,14 +72,24 @@ export default function MyAppealsPage() {
 
   const withdraw = async (id: string) => {
     if (!(await portalConfirm('确定撤销该诉求？'))) return;
-    await appealService.withdrawAppeal(id);
-    void fetchAppeals();
+    try {
+      await appealService.withdrawAppeal(id);
+      portalToast.success('已撤销该诉求');
+      void fetchAppeals();
+    } catch (e) {
+      portalToast.error(e instanceof Error ? e.message : '撤销失败');
+    }
   };
 
   const remove = async (id: string) => {
     if (!(await portalConfirm('确定删除？'))) return;
-    await appealService.deleteAppeal(id);
-    void fetchAppeals();
+    try {
+      await appealService.deleteAppeal(id);
+      portalToast.success('已删除');
+      void fetchAppeals();
+    } catch (e) {
+      portalToast.error(e instanceof Error ? e.message : '删除失败');
+    }
   };
 
   const tabs = [

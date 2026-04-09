@@ -1,4 +1,4 @@
-import { Modal, Form, Radio, Space, Button, Divider, Typography } from 'antd';
+import { Modal, Form, Radio, Space, Button, Divider, Typography, message } from 'antd';
 import {
   usePreferencesStore,
   THEME_PRESET_HEX,
@@ -39,7 +39,14 @@ export default function PreferencesHost() {
       onCancel={close}
       rootClassName="jsjb-preferences-modal"
       footer={[
-        <Button key="ok" type="primary" onClick={close}>
+        <Button
+          key="ok"
+          type="primary"
+          onClick={() => {
+            message.success('偏好已保存到本机');
+            close();
+          }}
+        >
           完成
         </Button>,
       ]}
@@ -104,8 +111,8 @@ export default function PreferencesHost() {
             onChange={(e) => setMetadataDisplayLocale(e.target.value as MetadataDisplayLocale)}
           >
             <Radio.Button value="zh">中文</Radio.Button>
-            <Radio.Button value="en">English</Radio.Button>
-            <Radio.Button value="ja">日本語</Radio.Button>
+            <Radio.Button value="en">英语</Radio.Button>
+            <Radio.Button value="ja">日语</Radio.Button>
           </Radio.Group>
         </Form.Item>
 

@@ -3,24 +3,24 @@ import { useState } from 'react';
 import { useIsMobileLayout } from '@/context/MobileLayoutContext';
 import MobileSubPageScaffold from '@/components/mobile/MobileSubPageScaffold';
 import { PortalButton } from './ui';
+import { portalToast } from './shell/portalFeedbackStore';
 
 export default function ForgotPasswordPage() {
   const navigate = useNavigate();
   const isMobile = useIsMobileLayout();
   const [loading, setLoading] = useState(false);
   const [phone, setPhone] = useState('');
-  const [err, setErr] = useState('');
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErr('');
     if (!/^1[3-9]\d{9}$/.test(phone)) {
-      setErr('手机号格式不正确');
+      portalToast.error('手机号格式不正确');
       return;
     }
     setLoading(true);
     try {
       await new Promise((r) => setTimeout(r, 500));
+      portalToast.success('演示环境：已记录重置申请，请返回使用账号密码登录');
       navigate('/user/login');
     } finally {
       setLoading(false);
@@ -32,7 +32,6 @@ export default function ForgotPasswordPage() {
       <h1 className={`font-headline font-bold text-on-surface ${isMobile ? 'sr-only' : 'mt-0 text-xl'}`}>密码重置</h1>
       {!isMobile ? <p className="mt-2 text-sm text-on-surface-variant">验证通过后将引导您完成密码更新。</p> : null}
       {isMobile ? <p className="text-sm leading-relaxed text-on-surface-variant">验证通过后将引导您完成密码更新。</p> : null}
-      {err ? <p className="mt-4 text-sm text-red-600">{err}</p> : null}
       <form onSubmit={submit} className="mt-6 space-y-4">
         <div>
           <label className="mb-1 block text-xs font-bold text-on-surface-variant">手机号</label>

@@ -7,6 +7,7 @@ import { PortalButton, PortalSelect } from './ui';
 import { useIsMobileLayout } from '@/context/MobileLayoutContext';
 import MobileSubPageScaffold from '@/components/mobile/MobileSubPageScaffold';
 import { useMockDbUpdated } from '@/hooks/useMockDbUpdated';
+import { portalToast } from './shell/portalFeedbackStore';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import {
   resolveAppealDepartmentName,
@@ -77,6 +78,8 @@ export default function AppealListPage() {
         });
         setAppeals(result.data);
         setTotal(result.total);
+      } catch (e) {
+        portalToast.error(e instanceof Error ? e.message : '加载列表失败');
       } finally {
         setLoading(false);
       }

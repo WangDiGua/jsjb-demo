@@ -1,6 +1,6 @@
 import { glmChat, glmChatStream, isGlmConfigured } from '@/lib/glmClient';
 import { parseAiJson } from '@/lib/parseAiJson';
-import type { Appeal, AIRecommend, Department } from './types';
+import type { Appeal, AIRecommend, Department, ReplyReferenceItem } from './types';
 import {
   enrichDepartmentsFromAppeals,
   deriveQuestionTypeCounts,
@@ -8,18 +8,20 @@ import {
   sensitiveWords,
 } from './data';
 import { getDb } from './persist';
+import { readSystemSettings } from './adminConfigService';
 import type { MetadataLocaleCode, MetadataTranslateInput, MetadataTranslateModelOut } from './metadataI18nTypes';
+import {
+  buildLocalAIRecommend,
+  heuristicDuplicateFromScores,
+  localRankReplyReferences,
+  rankAppealsForDuplicateCheck,
+  tryLocalDepartmentMatch,
+  tryLocalQuestionType,
+  rankAppealsByTextSimilarity,
+} from './aiRetrieval';
+import { mockLatency } from './mockLatency';
 
-const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-/** 智能题库：相似已办结公开工单及其参考答复（供办理人选用） */
-export type ReplyReferenceItem = {
-  appealId: string;
-  title: string;
-  similarity: number;
-  caseSummary: string;
-  referenceReply: string;
-};
+export type { ReplyReferenceItem } from './types';
 
 function buildRepliedPublicReferencePool(appealId: string): { appeal: Appeal; replyText: string }[] {
   const db = getDb();
@@ -34,41 +36,6 @@ function buildRepliedPublicReferencePool(appealId: string): { appeal: Appeal; re
     out.push({ appeal: a, replyText: rep.content });
   }
   return out;
-}
-
-function tokenOverlapScore(a: string, b: string): number {
-  const toks = (s: string) =>
-    new Set(
-      (s.toLowerCase().match(/[\u4e00-\u9fff]{2,}|[a-z0-9]{3,}/gi) ?? []).filter(Boolean) as string[],
-    );
-  const A = toks(a);
-  const B = toks(b);
-  if (A.size === 0 || B.size === 0) return 0;
-  let inter = 0;
-  for (const x of A) if (B.has(x)) inter += 1;
-  return inter / Math.max(A.size, B.size);
-}
-
-function localRankReplyReferences(
-  current: Appeal,
-  pool: { appeal: Appeal; replyText: string }[],
-  take: number,
-): ReplyReferenceItem[] {
-  const scored = pool.map(({ appeal, replyText }) => {
-    let score = 0.18;
-    if (appeal.departmentId === current.departmentId) score += 0.32;
-    if (appeal.type === current.type) score += 0.22;
-    score += 0.38 * tokenOverlapScore(`${current.title} ${current.content}`, `${appeal.title} ${appeal.content}`);
-    return {
-      appealId: appeal.id,
-      title: appeal.title,
-      similarity: Math.min(0.96, Math.max(0.35, score)),
-      caseSummary: appeal.content.slice(0, 360) + (appeal.content.length > 360 ? '…' : ''),
-      referenceReply: replyText.slice(0, 4000),
-    };
-  });
-  scored.sort((x, y) => y.similarity - x.similarity);
-  return scored.slice(0, take);
 }
 
 function parseAiChatText(text: string): { answer: string; sources: string[] } {
@@ -112,63 +79,29 @@ async function chatJson<T>(system: string, user: string, _temperature?: number):
 
 export const aiService = {
   async getRecommendations(appealId: string): Promise<AIRecommend | null> {
-    await delay(80);
+    await mockLatency();
     const mockAppeals = getDb().appeals;
     const mockReplies = getDb().replies;
     const appeal = mockAppeals.find((a) => a.id === appealId);
     if (!appeal) return null;
-    const pool = mockAppeals
-      .filter((a) => a.id !== appealId && a.isPublic)
-      .slice(0, 24)
-      .map((a) => ({ id: a.id, title: a.title, snippet: a.content.slice(0, 120) }));
 
-    type Resp = {
-      items: { id: string; similarity: number; summary: string }[];
-      suggestedDepartmentId?: string;
-      suggestedType?: string;
-    };
-
-    const system =
-      '你是高校诉求语义分析助手。根据当前诉求，从历史公开诉求中找出语义最相似的条目，并给出建议部门 id、问题类型。';
-    const user = JSON.stringify({
-      current: { id: appeal.id, title: appeal.title, content: appeal.content.slice(0, 500) },
-      departmentIds: enrichDepartmentsFromAppeals(getDb().appeals).map((d) => ({ id: d.id, name: d.name })),
-      questionTypes: deriveQuestionTypeCounts(getDb().appeals).map((t) => t.name),
-      history: pool,
-      schema: {
-        items: '最多4条 {id, similarity 0-1, summary 一句}',
-        suggestedDepartmentId: 'dept id 或空',
-        suggestedType: '类型名或空',
-      },
+    const local = buildLocalAIRecommend({
+      appeal,
+      allAppeals: mockAppeals,
+      replies: mockReplies,
+      limit: 4,
     });
-
-    const r = await chatJson<Resp>(system, user, 0.35);
-    const similarAppeals = (r.items || [])
-      .map((it) => {
-        const a = mockAppeals.find((x) => x.id === it.id);
-        if (!a) return null;
-        const reply = mockReplies.find((rr) => rr.appealId === a.id);
-        return {
-          id: a.id,
-          title: a.title,
-          content: a.content.slice(0, 200),
-          replyContent: reply?.content?.slice(0, 200) || '（同类办结案例参考）',
-          similarity: Math.min(0.99, Math.max(0.5, it.similarity)),
-        };
-      })
-      .filter(Boolean) as AIRecommend['similarAppeals'];
-
-    const dept = enrichDepartmentsFromAppeals(getDb().appeals).find((d) => d.id === r.suggestedDepartmentId);
-    const suggestedDepartment = dept ? { id: dept.id, name: dept.name } : undefined;
-
-    const fallback = mockAIRecommendations.find((x) => x.appealId === appealId)?.similarAppeals ?? mockAIRecommendations[0]?.similarAppeals ?? [];
+    const fallback =
+      mockAIRecommendations.find((x) => x.appealId === appealId)?.similarAppeals ??
+      mockAIRecommendations[0]?.similarAppeals ??
+      [];
 
     return {
-      id: `ai_${appealId}_${Date.now()}`,
+      id: local.id,
       appealId,
-      similarAppeals: similarAppeals.length ? similarAppeals : fallback,
-      suggestedDepartment,
-      suggestedType: r.suggestedType,
+      similarAppeals: local.similarAppeals.length ? local.similarAppeals : fallback,
+      suggestedDepartment: local.suggestedDepartment,
+      suggestedType: local.suggestedType,
     };
   },
 
@@ -210,32 +143,24 @@ export const aiService = {
   async getSimilarAppeals(keyword: string): Promise<Appeal[]> {
     const kw = keyword.trim();
     if (!kw) return [];
-    const mockAppeals = getDb().appeals;
-    const candidates = mockAppeals.filter((a) => a.isPublic).slice(0, 30);
-    type R = { ids: string[] };
-    const system = '根据关键词从列表中选最相关的公开诉求 id，按相关度排序。';
-    const user = JSON.stringify({ keyword: kw, appeals: candidates.map((a) => ({ id: a.id, title: a.title })) });
-    try {
-      const r = await chatJson<R>(system, user, 0.2);
-      const ordered = (r.ids || [])
-        .map((id) => candidates.find((a) => a.id === id))
-        .filter(Boolean) as Appeal[];
-      if (ordered.length) return ordered.slice(0, 5);
-    } catch {
-      /* fallthrough */
-    }
-    return candidates
-      .filter((a) => a.title.toLowerCase().includes(kw.toLowerCase()))
+    const publicAppeals = getDb().appeals.filter((a) => a.isPublic);
+    const ranked = rankAppealsByTextSimilarity(kw, publicAppeals, 12);
+    if (ranked.length) return ranked.slice(0, 5);
+    return publicAppeals
+      .filter((a) => a.title.toLowerCase().includes(kw.toLowerCase()) || a.content.toLowerCase().includes(kw.toLowerCase()))
       .slice(0, 5);
   },
 
   async aiChat(question: string): Promise<{ answer: string; sources: string[] }> {
+    if (!readSystemSettings().ai.smartRecommend) {
+      throw new Error('系统设置中已关闭「AI 智能推荐」相关能力（含智能问答），请开启后再试');
+    }
     const text = await glmChat(
       [
         {
           role: 'system',
           content:
-            '你是「即诉即办」校内服务 AI，语气专业、简短。回答基于通用高校治理常识，非真实校方政策时勿断言「学校规定」，可写「建议向 X 部门核实」。最后一行必须以「来源：」开头，列出 1～3 条可参考的办事指引条目名称（无链接）。',
+            '你是「接诉即办」校内服务 AI，语气专业、简短。回答基于通用高校治理常识，非真实校方政策时勿断言「学校规定」，可写「建议向 X 部门核实」。最后一行必须以「来源：」开头，列出 1～3 条可参考的办事指引条目名称（无链接）。',
         },
         { role: 'user', content: question },
       ],
@@ -250,12 +175,15 @@ export const aiService = {
     onDelta: (delta: string) => void,
     signal?: AbortSignal,
   ): Promise<{ answer: string; sources: string[] }> {
+    if (!readSystemSettings().ai.smartRecommend) {
+      throw new Error('系统设置中已关闭「AI 智能推荐」相关能力（含智能问答），请开启后再试');
+    }
     const text = await glmChatStream(
       [
         {
           role: 'system',
           content:
-            '你是「即诉即办」校内服务 AI，语气专业、简短。回答基于通用高校治理常识，非真实校方政策时勿断言「学校规定」，可写「建议向 X 部门核实」。最后一行必须以「来源：」开头，列出 1～3 条可参考的办事指引条目名称（无链接）。',
+            '你是「接诉即办」校内服务 AI，语气专业、简短。回答基于通用高校治理常识，非真实校方政策时勿断言「学校规定」，可写「建议向 X 部门核实」。最后一行必须以「来源：」开头，列出 1～3 条可参考的办事指引条目名称（无链接）。',
         },
         { role: 'user', content: question },
       ],
@@ -267,6 +195,9 @@ export const aiService = {
   },
 
   async aiWriteDraftStream(topic: string, onDelta: (delta: string) => void, signal?: AbortSignal): Promise<string> {
+    if (!readSystemSettings().ai.assistWrite) {
+      throw new Error('系统设置中已关闭「AI 帮写」，请开启后再试');
+    }
     return glmChatStream(
       [
         {
@@ -287,6 +218,9 @@ export const aiService = {
     onDelta: (delta: string) => void,
     signal?: AbortSignal,
   ): Promise<string> {
+    if (!readSystemSettings().ai.smartDispatch) {
+      throw new Error('系统设置中已关闭「AI 智能分派」相关能力，请开启后再试');
+    }
     return glmChatStream(
       [
         {
@@ -308,6 +242,9 @@ export const aiService = {
     onDelta: (delta: string) => void,
     signal?: AbortSignal,
   ): Promise<string> {
+    if (!readSystemSettings().ai.translation) {
+      throw new Error('系统设置中已关闭「AI 翻译」，请开启后再试');
+    }
     const lang = target === 'en' ? '英语' : '日语';
     return glmChatStream(
       [
@@ -322,20 +259,48 @@ export const aiService = {
 
   async duplicateCheck(sample: string): Promise<{ isDuplicate: boolean; hits: Appeal[] }> {
     const publicAppeals = getDb().appeals.filter((a) => a.isPublic);
-    const compact = publicAppeals.slice(0, 35).map((a) => ({ id: a.id, title: a.title }));
+    const ranked = rankAppealsForDuplicateCheck(sample, publicAppeals, 14);
+
+    if (!isGlmConfigured() || !readSystemSettings().ai.smartRecommend) {
+      return heuristicDuplicateFromScores(sample, ranked);
+    }
+
+    const compact = ranked.map((a) => ({ id: a.id, title: a.title }));
+    if (compact.length === 0) {
+      return { isDuplicate: false, hits: [] };
+    }
     type R = { duplicate: boolean; ids: string[] };
-    const system = '判断「待查」与历史标题是否主题重复（同一件事反复投诉）。ids 为历史诉求 id，最多 3 个。';
-    const user = JSON.stringify({ 待查: sample, compact });
-    const r = await chatJson<R>(system, user, 0.15);
-    const hits = (r.ids || [])
-      .map((id) => publicAppeals.find((a) => a.id === id))
-      .filter(Boolean) as Appeal[];
-    return { isDuplicate: Boolean(r.duplicate && hits.length), hits };
+    const system = '判断「待查」与历史标题是否主题重复（同一件事反复投诉）。ids 为历史诉求 id，最多 3 个。候选已按本地相似度预排序，请优先考虑列表前列。';
+    const user = JSON.stringify({ 待查: sample.slice(0, 700), compact });
+    try {
+      const r = await chatJson<R>(system, user, 0.15);
+      const hits = (r.ids || [])
+        .map((id) => publicAppeals.find((a) => a.id === id))
+        .filter(Boolean) as Appeal[];
+      if (hits.length) {
+        return { isDuplicate: Boolean(r.duplicate && hits.length), hits };
+      }
+    } catch {
+      /* 模型失败时用启发式 */
+    }
+    return heuristicDuplicateFromScores(sample, ranked);
   },
 
   async matchDepartment(text: string): Promise<{ department: Department; confidence: number }> {
+    const depts = enrichDepartmentsFromAppeals(getDb().departments, getDb().appeals);
+
+    const quick = tryLocalDepartmentMatch(text, depts);
+    const glmDispatch = isGlmConfigured() && readSystemSettings().ai.smartDispatch;
+    if (glmDispatch) {
+      if (quick && quick.confidence >= 0.78) {
+        return quick;
+      }
+    } else {
+      if (quick) return quick;
+      return { department: depts[0]!, confidence: 0.42 };
+    }
+
     type R = { departmentId: string; confidence: number };
-    const depts = enrichDepartmentsFromAppeals(getDb().appeals);
     const system = '诉求派发：从部门列表选唯一最匹配的 departmentId，confidence 填 0-1。';
     const user = JSON.stringify({
       诉求摘要: text.slice(0, 800),
@@ -347,12 +312,24 @@ export const aiService = {
   },
 
   async classifyQuestion(text: string): Promise<{ type: string; confidence: number }> {
-    type R = { type: string; confidence: number };
     const qTypes = deriveQuestionTypeCounts(getDb().appeals);
-    const system = '将诉求分类到给定类型名之一（必须完全一致）。';
-    const user = JSON.stringify({ 文本: text.slice(0, 800), 类型: qTypes.map((t) => t.name) });
-    const r = await chatJson<R>(system, user, 0.1);
     const names = qTypes.map((t) => t.name);
+
+    const quick = tryLocalQuestionType(text, names);
+    const glmDispatch = isGlmConfigured() && readSystemSettings().ai.smartDispatch;
+    if (glmDispatch) {
+      if (quick && quick.confidence >= 0.8) {
+        return quick;
+      }
+    } else {
+      if (quick) return quick;
+      return { type: names[0]!, confidence: 0.42 };
+    }
+
+    type R = { type: string; confidence: number };
+    const system = '将诉求分类到给定类型名之一（必须完全一致）。';
+    const user = JSON.stringify({ 文本: text.slice(0, 800), 类型: names });
+    const r = await chatJson<R>(system, user, 0.1);
     const type =
       names.find((n) => n === r.type) ||
       names.find((n) => r.type?.includes(n) || n.includes(r.type || '')) ||
@@ -361,6 +338,9 @@ export const aiService = {
   },
 
   async explainDispatch(scenario: string): Promise<string> {
+    if (!readSystemSettings().ai.smartDispatch) {
+      throw new Error('系统设置中已关闭「AI 智能分派」相关能力，请开启后再试');
+    }
     return glmChat(
       [
         {
@@ -375,6 +355,9 @@ export const aiService = {
   },
 
   async aiWriteDraft(topic: string): Promise<string> {
+    if (!readSystemSettings().ai.assistWrite) {
+      throw new Error('系统设置中已关闭「AI 帮写」，请开启后再试');
+    }
     return glmChat(
       [
         {
@@ -394,6 +377,9 @@ export const aiService = {
     departmentName: string;
     content: string;
   }): Promise<string> {
+    if (!readSystemSettings().ai.assistWrite) {
+      throw new Error('系统设置中已关闭「AI 帮写」，请开启后再试');
+    }
     const payload = {
       标题: appeal.title.slice(0, 240),
       问题类型: appeal.type,
@@ -414,6 +400,9 @@ export const aiService = {
   },
 
   async aiTranslate(text: string, target: 'en' | 'ja'): Promise<string> {
+    if (!readSystemSettings().ai.translation) {
+      throw new Error('系统设置中已关闭「AI 翻译」，请开启后再试');
+    }
     const lang = target === 'en' ? '英语' : '日语';
     return glmChat(
       [
@@ -431,23 +420,49 @@ export const aiService = {
    * 智能题库：从历史「已答复 + 公开 + 已发布答复」工单中匹配参考答复。
    * 已配置大模型时用语义排序；否则同部门/同类型 + 词重叠启发式。
    */
-  async getReplyReferenceCandidates(appealId: string, opts?: { limit?: number }): Promise<ReplyReferenceItem[]> {
-    await delay(40);
-    const limit = Math.min(12, Math.max(4, opts?.limit ?? 8));
+  async getReplyReferenceCandidates(
+    appealId: string,
+    opts?: { limit?: number; /** 默认 false：只用本地检索画像，避免二次大模型排序 */ semanticRankWithLlm?: boolean },
+  ): Promise<ReplyReferenceItem[]> {
+    await mockLatency();
+    const limit = Math.min(8, Math.max(3, opts?.limit ?? 4));
     const current = getDb().appeals.find((a) => a.id === appealId);
     if (!current) return [];
     const pool = buildRepliedPublicReferencePool(appealId);
     if (pool.length === 0) return [];
 
-    if (isGlmConfigured()) {
+    let workPool = pool;
+    if (pool.length > 40) {
+      const rankedAppeals = rankAppealsByTextSimilarity(
+        `${current.title} ${current.content}`.slice(0, 900),
+        pool.map((p) => p.appeal),
+        40,
+      );
+      const keep = new Set(rankedAppeals.map((a) => a.id));
+      workPool = pool.filter((p) => keep.has(p.appeal.id));
+    }
+
+    const localFirst = localRankReplyReferences(current, workPool, limit);
+
+    if (
+      opts?.semanticRankWithLlm &&
+      isGlmConfigured() &&
+      readSystemSettings().ai.smartRecommend &&
+      workPool.length > 0
+    ) {
       try {
         type Resp = { ranked: { id: string; similarity: number }[] };
-        const compact = pool.slice(0, 36).map(({ appeal, replyText }) => ({
-          id: appeal.id,
-          title: appeal.title,
-          snippet: appeal.content.slice(0, 200),
-          replySnippet: replyText.slice(0, 140),
-        }));
+        const preRanked = localRankReplyReferences(current, workPool, Math.min(20, workPool.length));
+        const allow = new Set(preRanked.map((x) => x.appealId));
+        const compact = preRanked.map((row) => {
+          const p = workPool.find((x) => x.appeal.id === row.appealId)!;
+          return {
+            id: p.appeal.id,
+            title: p.appeal.title,
+            snippet: p.appeal.content.slice(0, 200),
+            replySnippet: p.replyText.slice(0, 140),
+          };
+        });
         const system = [
           '你是高校接诉即办业务助手。给定「当前待办诉求」与若干「已办结且公开」的历史工单（每条含标题、诉求摘要、已发布答复片段）。',
           `请仅根据语义相关性，对候选 id 排序（最相似在前），输出 ranked 数组，长度不超过 ${limit}。`,
@@ -458,9 +473,10 @@ export const aiService = {
           candidates: compact,
         });
         const r = await chatJson<Resp>(system, user, 1);
-        const pmap = new Map(pool.map((p) => [p.appeal.id, p]));
+        const pmap = new Map(workPool.map((p) => [p.appeal.id, p]));
         const items: ReplyReferenceItem[] = [];
         for (const row of r.ranked ?? []) {
+          if (!allow.has(row.id)) continue;
           const p = pmap.get(row.id);
           if (!p) continue;
           items.push({
@@ -468,19 +484,22 @@ export const aiService = {
             title: p.appeal.title,
             similarity: Math.min(0.99, Math.max(0.45, row.similarity)),
             caseSummary: p.appeal.content.slice(0, 360) + (p.appeal.content.length > 360 ? '…' : ''),
-            referenceReply: p.replyText.slice(0, 4000),
+            referenceReply: p.replyText.slice(0, 1600) + (p.replyText.length > 1600 ? '\n…' : ''),
           });
           if (items.length >= limit) break;
         }
         if (items.length > 0) return items;
       } catch {
-        /* 本地降级 */
+        /* 本地结果已可用 */
       }
     }
-    return localRankReplyReferences(current, pool, limit);
+    return localFirst;
   },
 
   async translateMetadataBundle(input: MetadataTranslateInput, target: MetadataLocaleCode): Promise<MetadataTranslateModelOut> {
+    if (!readSystemSettings().ai.translation) {
+      throw new Error('系统设置中已关闭「AI 翻译」，请开启后再试');
+    }
     const lang = target === 'en' ? '英语' : '日语';
     const system = [
       `你是高校门户本地化译员，将用户 JSON 中的中文行政/校园用语译为自然流畅的${lang}。`,

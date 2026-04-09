@@ -7,6 +7,7 @@ import { resolvePortalBrandingI18n } from '@/lib/metadataLocale';
 import { useMockDbUpdated } from '@/hooks/useMockDbUpdated';
 import { useIsMobileLayout } from '@/context/MobileLayoutContext';
 import { PortalButton } from './ui';
+import { portalToast } from './shell/portalFeedbackStore';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -17,14 +18,13 @@ export default function LoginPage() {
   useMockDbUpdated(useCallback(() => setBrandingTick((n) => n + 1), []));
   const [mode, setMode] = useState<'account' | 'phone' | 'external'>('account');
   const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState('');
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(true);
   const [phone, setPhone] = useState('');
   const [captcha, setCaptcha] = useState('');
-  const [loginWelcome, setLoginWelcome] = useState('兰途接诉即办');
+  const [loginWelcome, setLoginWelcome] = useState('接诉即办');
   const [loginSubtitle, setLoginSubtitle] = useState('登录校园共治门户');
 
   useEffect(() => {
@@ -37,15 +37,15 @@ export default function LoginPage() {
 
   const accountLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErr('');
     setLoading(true);
     try {
       const res = await userService.login(username, password);
       if (res.success && res.data) {
         login(res.data);
+        portalToast.success('登录成功');
         navigate('/user/home');
       } else {
-        setErr(res.message || '登录失败');
+        portalToast.error(res.message || '登录失败');
       }
     } finally {
       setLoading(false);
@@ -54,9 +54,8 @@ export default function LoginPage() {
 
   const phoneLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErr('');
     if (!/^1[3-9]\d{9}$/.test(phone)) {
-      setErr('手机号格式不正确');
+      portalToast.error('手机号格式不正确');
       return;
     }
     setLoading(true);
@@ -64,9 +63,10 @@ export default function LoginPage() {
       const res = await userService.phoneLogin(phone, captcha);
       if (res.success && res.data) {
         login(res.data);
+        portalToast.success('登录成功');
         navigate('/user/home');
       } else {
-        setErr('登录失败');
+        portalToast.error('登录失败');
       }
     } finally {
       setLoading(false);
@@ -103,15 +103,12 @@ export default function LoginPage() {
                 }`}
                 onClick={() => {
                   setMode(m);
-                  setErr('');
                 }}
               >
                 {m === 'account' ? '账号' : m === 'phone' ? '手机' : '校外'}
               </PortalButton>
             ))}
           </div>
-
-          {err ? <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{err}</p> : null}
 
           {mode === 'account' ? (
             <form onSubmit={accountLogin} className="space-y-4">

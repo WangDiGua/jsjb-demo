@@ -240,7 +240,7 @@ export function enrichMockData() {
   const additionalUsers = generateAdditionalUsers(45);
   const allUsers = [...mockUsers, ...additionalUsers];
   
-  const allDepartments = enrichDepartmentsFromAppeals(mockAppeals);
+  const allDepartments = enrichDepartmentsFromAppeals(departmentTemplates, mockAppeals);
   
   const additionalAppeals = generateAdditionalAppeals(177, allUsers, allDepartments);
   const allAppeals = [...mockAppeals, ...additionalAppeals];

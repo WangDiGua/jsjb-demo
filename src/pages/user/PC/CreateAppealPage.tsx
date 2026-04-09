@@ -1,7 +1,8 @@
 import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Spin } from 'antd';
-import { aiService, appealService, questionTypeService, departmentService, getDb } from '@/mock';
+import { aiService, appealService, questionTypeService, departmentService, getDb, adminConfigService } from '@/mock';
+import type { AppealFormField } from '@/mock/adminConfigTypes';
 import type { Department, QuestionType } from '@/mock/types';
 import { useAppStore } from '@/store';
 import { useIsMobileLayout } from '@/context/MobileLayoutContext';
@@ -13,6 +14,9 @@ import { portalToast } from './shell/portalFeedbackStore';
 import { useMockDbUpdated } from '@/hooks/useMockDbUpdated';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { resolveDepartmentI18n, resolveQuestionTypeLabel } from '@/lib/metadataLocale';
+
+const MAX_APPEAL_IMAGE_FILES = 8;
+const MAX_APPEAL_IMAGE_BYTES = 4 * 1024 * 1024;
 
 export default function CreateAppealPage() {
   const navigate = useNavigate();
@@ -28,7 +32,6 @@ export default function CreateAppealPage() {
   const [content, setContent] = useState('');
   const [isPublic, setIsPublic] = useState(true);
   const [isAnonymous, setIsAnonymous] = useState(false);
-  const [error, setError] = useState('');
   const [okMsg, setOkMsg] = useState('');
 
   const [sensitive, setSensitive] = useState<{ bad: boolean; words: string[] }>({ bad: false, words: [] });
@@ -38,11 +41,6 @@ export default function CreateAppealPage() {
   const [aiLoad, setAiLoad] = useState(false);
   const [qTypes, setQTypes] = useState<QuestionType[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  /** 丢弃过期的防抖检测异步结果，避免短输入/快速删改后 UI 被旧结果覆盖 */
-  const sensSeqRef = useRef(0);
-  /** 最近一次「同一段 title+content」下检测为干净的合并正文，用于提交时跳过重复请求 */
-  const lastSensPassRef = useRef<string | null>(null);
   const sensElapsedMs = useRequestStopwatch(sensLoad);
 
   const [dupLoading, setDupLoading] = useState(false);
@@ -58,6 +56,20 @@ export default function CreateAppealPage() {
   const trStream = useAiStreamPhase();
   const trAbortRef = useRef<AbortController | null>(null);
 
+  const [formFieldDefs, setFormFieldDefs] = useState<AppealFormField[]>([]);
+  const [appealImages, setAppealImages] = useState<string[]>([]);
+
+  /** 正文或标题变更后清除上次提交触发的敏感词提示，避免旧结果误导 */
+  useEffect(() => {
+    setSensitive({ bad: false, words: [] });
+  }, [title, content]);
+
+  const loadFormConfig = useCallback(() => {
+    void adminConfigService.getBundle().then((b) => {
+      setFormFieldDefs([...b.formFields].sort((a, c) => a.order - c.order));
+    });
+  }, []);
+
   const refreshDepartments = useCallback(() => {
     void departmentService.getDepartments().then(setDepartments);
   }, []);
@@ -65,13 +77,15 @@ export default function CreateAppealPage() {
   useEffect(() => {
     void questionTypeService.getQuestionTypes().then(setQTypes);
     refreshDepartments();
-  }, [refreshDepartments]);
+    loadFormConfig();
+  }, [refreshDepartments, loadFormConfig]);
 
   useMockDbUpdated(
     useCallback(() => {
       refreshDepartments();
       void questionTypeService.getQuestionTypes().then(setQTypes);
-    }, [refreshDepartments]),
+      loadFormConfig();
+    }, [refreshDepartments, loadFormConfig]),
   );
 
   useEffect(() => {
@@ -86,11 +100,57 @@ export default function CreateAppealPage() {
       setDepartmentId(a.departmentId);
       setIsPublic(a.isPublic);
       setIsAnonymous(a.isAnonymous);
+      setAppealImages([...(a.images ?? [])]);
     });
     return () => {
       cancelled = true;
     };
   }, [resubmitId, currentUser?.id]);
+
+  const configuredImageField = useMemo(
+    () => formFieldDefs.find((f) => f.type === 'image'),
+    [formFieldDefs],
+  );
+
+  const onAppealImagesChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (!files?.length) return;
+      let room = MAX_APPEAL_IMAGE_FILES - appealImages.length;
+      if (room <= 0) {
+        portalToast.warning(`最多上传 ${MAX_APPEAL_IMAGE_FILES} 张图片`);
+        e.target.value = '';
+        return;
+      }
+      const readers: Promise<string | null>[] = [];
+      for (let i = 0; i < files.length && room > 0; i++) {
+        const file = files[i]!;
+        if (!file.type.startsWith('image/')) {
+          portalToast.error(`跳过非图片文件：${file.name}`);
+          continue;
+        }
+        if (file.size > MAX_APPEAL_IMAGE_BYTES) {
+          portalToast.error(`${file.name} 超过 4MB，已跳过`);
+          continue;
+        }
+        room -= 1;
+        readers.push(
+          new Promise((resolve) => {
+            const r = new FileReader();
+            r.onload = () => resolve(typeof r.result === 'string' ? r.result : null);
+            r.onerror = () => resolve(null);
+            r.readAsDataURL(file);
+          }),
+        );
+      }
+      void Promise.all(readers).then((urls) => {
+        const next = urls.filter((u): u is string => !!u);
+        if (next.length) setAppealImages((prev) => [...prev, ...next]);
+      });
+      e.target.value = '';
+    },
+    [appealImages.length],
+  );
 
   /** 智能助理「发起诉求」预填（sessionStorage，导航进入时一次性消费） */
   useLayoutEffect(() => {
@@ -107,48 +167,6 @@ export default function CreateAppealPage() {
     const tid = window.setTimeout(() => setOkMsg(''), 5000);
     return () => clearTimeout(tid);
   }, [resubmitId]);
-
-  const runSens = useCallback(async (v: string) => {
-    if (v.length < 6) {
-      setSensitive({ bad: false, words: [] });
-      return;
-    }
-    const runId = ++sensSeqRef.current;
-    setSensLoad(true);
-    try {
-      const r = await aiService.checkSensitiveWords(v);
-      if (runId !== sensSeqRef.current) return;
-      if (!r.ok) {
-        setSensitive({ bad: false, words: [] });
-        lastSensPassRef.current = null;
-        return;
-      }
-      setSensitive({ bad: r.hasSensitive, words: r.words });
-      if (r.hasSensitive) lastSensPassRef.current = null;
-      else lastSensPassRef.current = v;
-    } catch (e) {
-      if (runId !== sensSeqRef.current) return;
-      lastSensPassRef.current = null;
-      setError(e instanceof Error ? e.message : '敏感词检测失败');
-    } finally {
-      if (runId === sensSeqRef.current) setSensLoad(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    const text = `${title}\n${content}`.trim();
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (text.length < 6) {
-      sensSeqRef.current += 1;
-      lastSensPassRef.current = null;
-      setSensitive({ bad: false, words: [] });
-      return;
-    }
-    debounceRef.current = setTimeout(() => void runSens(text), 450);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [title, content, runSens]);
 
   useEffect(() => {
     const text = `${title}\n${content}`.trim();
@@ -186,64 +204,52 @@ export default function CreateAppealPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     if (!currentUser) {
       navigate('/user/login');
       return;
     }
     if (!title.trim() || title.length > 100) {
-      setError('请填写标题（不超过 100 字）');
+      portalToast.error('请填写标题（不超过 100 字）');
       return;
     }
     if (!type) {
-      setError('请选择问题类型');
+      portalToast.error('请选择问题类型');
       return;
     }
     if (!departmentId) {
-      setError('请选择部门');
+      portalToast.error('请选择部门');
       return;
     }
     if (content.length < 10) {
-      setError('内容至少 10 个字');
+      portalToast.error('内容至少 10 个字');
       return;
     }
     const mergedText = `${title}\n${content}`.trim();
-    const cachedPass = lastSensPassRef.current === mergedText;
-    if (sensLoad && !cachedPass) {
-      setError('敏感词检测进行中，请稍候再提交');
+    setSensLoad(true);
+    try {
+      const sensResult = await aiService.checkSensitiveWords(mergedText);
+      if (!sensResult.ok) {
+        portalToast.error('内容安全检测未完成，请检查网络或大模型配置后重试');
+        return;
+      }
+      if (sensResult.hasSensitive) {
+        setSensitive({ bad: true, words: sensResult.words });
+        portalToast.error(`内容包含不适宜表述：${sensResult.words.join('、')}`);
+        return;
+      }
+    } catch (e) {
+      portalToast.error(e instanceof Error ? e.message : '敏感词检测失败');
       return;
-    }
-    if (!cachedPass) {
-      setSensLoad(true);
-      let sensResult: Awaited<ReturnType<typeof aiService.checkSensitiveWords>>;
-      try {
-        sensResult = await aiService.checkSensitiveWords(mergedText);
-      } catch (e) {
-        setSensLoad(false);
-        setError(e instanceof Error ? e.message : '敏感词检测失败');
-        return;
-      } finally {
-        setSensLoad(false);
-      }
-      if (!sensResult!.ok) {
-        setError('内容安全检测未完成，请检查网络或大模型配置后重试');
-        return;
-      }
-      if (sensResult!.hasSensitive) {
-        setSensitive({ bad: true, words: sensResult!.words });
-        setError(`内容包含不适宜表述：${sensResult!.words.join('、')}`);
-        return;
-      }
-      setSensitive({ bad: false, words: [] });
-      lastSensPassRef.current = mergedText;
-    } else if (sensitive.bad) {
-      lastSensPassRef.current = null;
-      setError('内容可能包含不适宜表述，请修改后重试');
-      return;
+    } finally {
+      setSensLoad(false);
     }
     const dept = departments.find((d) => d.id === departmentId);
     if (!dept) {
-      setError('部门无效');
+      portalToast.error('部门无效');
+      return;
+    }
+    if (configuredImageField?.required && appealImages.length === 0) {
+      portalToast.error(`请上传${configuredImageField.label}`);
       return;
     }
     setLoading(true);
@@ -261,12 +267,14 @@ export default function CreateAppealPage() {
           isAnonymous,
           响应时长: null,
           处理时长: null,
+          ...(appealImages.length > 0 ? { images: [...appealImages] } : {}),
         },
         { skipSensitiveCheck: true },
       );
+      portalToast.success('诉求已提交');
       navigate('/user/appeal/my');
     } catch (e) {
-      setError(e instanceof Error ? e.message : '提交失败');
+      portalToast.error(e instanceof Error ? e.message : '提交失败');
     } finally {
       setLoading(false);
     }
@@ -331,22 +339,6 @@ export default function CreateAppealPage() {
                 <li key={a.id} className="rounded-lg border border-outline-variant/15 bg-surface/80 p-2.5">
                   <p className="font-semibold text-on-surface">{a.title}</p>
                   <p className="mt-1 line-clamp-2 text-xs text-on-surface-variant">{a.content}</p>
-                  <PortalButton
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="mt-2 font-bold"
-                    onClick={() => {
-                      setTitle(a.title.slice(0, 100));
-                      setContent(a.content.slice(0, 2000));
-                      setType(a.type);
-                      setDepartmentId(a.departmentId);
-                      setOkMsg('已从案例带入，请按实际情况修改');
-                      setTimeout(() => setOkMsg(''), 4000);
-                    }}
-                  >
-                    参照此案例填入表单
-                  </PortalButton>
                 </li>
               ))}
           </ul>
@@ -591,7 +583,6 @@ export default function CreateAppealPage() {
     <div className="grid w-full grid-cols-1 items-start gap-8 md:grid-cols-[minmax(0,1fr)_minmax(16rem,24rem)] md:gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(17rem,28rem)] lg:gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,30rem)] xl:gap-10">
       <div className="min-w-0 space-y-4 md:space-y-5">
         {okMsg ? <p className="text-sm font-semibold text-success">{okMsg}</p> : null}
-        {error ? <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p> : null}
 
         <div className="md:hidden">{aiBanner}</div>
 
@@ -635,18 +626,14 @@ export default function CreateAppealPage() {
         <div>
           <label className="mb-2 block text-sm font-bold text-on-surface">诉求内容</label>
           <p className="mb-2 text-xs text-on-surface-variant" role="status" aria-live="polite">
-            {mergedText.length < 6
-              ? '敏感词筛查：标题与正文合计满 6 字后自动检测（本地词库优先，必要时再请求大模型复审）。'
-              : sensLoad
-                ? (
-                    <>
-                      敏感词筛查：正在扫描正文…（已用时{' '}
-                      <span className="font-mono font-semibold tabular-nums text-primary">{formatAiElapsed(sensElapsedMs)}</span>）
-                    </>
-                  )
-                : sensitive.bad
-                  ? `敏感词筛查：已标记可疑词，提交前请修改。${sensElapsedMs > 0 ? `（本次检测 ${formatAiElapsed(sensElapsedMs)}）` : ''}`
-                  : `敏感词筛查：本轮检测已完成${sensElapsedMs > 0 ? `（${formatAiElapsed(sensElapsedMs)}）` : ''}。`}
+            {sensLoad
+              ? (
+                  <>
+                    敏感词筛查：正在检测标题与正文…（已用时{' '}
+                    <span className="font-mono font-semibold tabular-nums text-primary">{formatAiElapsed(sensElapsedMs)}</span>）
+                  </>
+                )
+              : '敏感词筛查：仅在您点击「提交诉求」时检测（本地词库优先，必要时再请求大模型复审）；若命中敏感词请修改后再次提交。'}
           </p>
           <textarea
             className="min-h-[180px] w-full rounded-lg border border-outline-variant/40 bg-surface px-4 py-3 text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 lg:min-h-[200px]"
@@ -660,14 +647,81 @@ export default function CreateAppealPage() {
           ) : null}
           <div className="mt-1 text-right text-xs text-on-surface-variant">{content.length}/2000</div>
         </div>
-        <label className="flex cursor-pointer items-center gap-3">
-          <input type="checkbox" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} className="rounded border-outline-variant text-primary" />
-          <span className="text-sm">公开诉求</span>
-        </label>
-        <label className="flex cursor-pointer items-center gap-3">
-          <input type="checkbox" checked={isAnonymous} onChange={(e) => setIsAnonymous(e.target.checked)} className="rounded border-outline-variant text-primary" />
-          <span className="text-sm">匿名</span>
-        </label>
+        {configuredImageField ? (
+          <div>
+            <div className="mb-2 flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3 sm:gap-y-1">
+              <label htmlFor="appeal-config-image-upload" className="text-sm font-bold text-on-surface">
+                {configuredImageField.label}
+                {configuredImageField.required ? <span className="ml-1 text-red-500">*</span> : null}
+              </label>
+              <span className="text-xs text-on-surface-variant">
+                演示环境以 Data URL 存入本地 Mock；单张不超过 4MB，最多 {MAX_APPEAL_IMAGE_FILES} 张
+              </span>
+            </div>
+            <input
+              id="appeal-config-image-upload"
+              type="file"
+              accept="image/*"
+              multiple
+              className="sr-only"
+              onChange={onAppealImagesChange}
+            />
+            <div className="flex flex-wrap items-center gap-3">
+              <label
+                htmlFor="appeal-config-image-upload"
+                className="inline-flex cursor-pointer rounded-xl border border-outline-variant/40 bg-surface-container-lowest px-4 py-2 text-sm font-semibold text-on-surface transition-colors hover:border-primary/35 hover:bg-primary/5"
+              >
+                选择图片
+              </label>
+              <span className="text-xs text-on-surface-variant">
+                {appealImages.length > 0 ? `已选 ${appealImages.length} 张` : configuredImageField.required ? '必填' : '可选'}
+              </span>
+            </div>
+            {appealImages.length > 0 ? (
+              <ul className="mt-3 flex flex-wrap gap-3">
+                {appealImages.map((src, idx) => (
+                  <li key={`img-${idx}-${src.length}`} className="relative">
+                    <img
+                      src={src}
+                      alt=""
+                      className="h-20 w-20 rounded-lg border border-outline-variant/30 object-cover"
+                    />
+                    <button
+                      type="button"
+                      className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-surface-container-high text-sm font-bold leading-none text-on-surface shadow ring-1 ring-outline-variant/40"
+                      aria-label="移除该图片"
+                      onClick={() => setAppealImages((prev) => prev.filter((_, i) => i !== idx))}
+                    >
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        ) : null}
+        <div className="space-y-3">
+          <label className="flex cursor-pointer items-center gap-3">
+            <input
+              id="appeal-is-public"
+              type="checkbox"
+              checked={isPublic}
+              onChange={(e) => setIsPublic(e.target.checked)}
+              className="h-5 w-5 min-h-5 min-w-5 shrink-0 cursor-pointer rounded border-2 border-outline-variant bg-surface-container-lowest text-primary accent-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            />
+            <span className="text-sm">公开诉求</span>
+          </label>
+          <label className="flex cursor-pointer items-center gap-3">
+            <input
+              id="appeal-is-anonymous"
+              type="checkbox"
+              checked={isAnonymous}
+              onChange={(e) => setIsAnonymous(e.target.checked)}
+              className="h-5 w-5 min-h-5 min-w-5 shrink-0 cursor-pointer rounded border-2 border-outline-variant bg-surface-container-lowest text-primary accent-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            />
+            <span className="text-sm">匿名</span>
+          </label>
+        </div>
         <div className={`flex flex-wrap pt-4 ${isMobile ? 'flex-col gap-3' : 'justify-end gap-4'}`}>
           <PortalButton
             variant="ghost"

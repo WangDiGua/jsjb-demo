@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Card, Table, Button, Space, Modal, Form, Input, message, Select } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import { adminConfigService, mockDepartments } from '@/mock';
+import { adminConfigService, departmentService } from '@/mock';
 import type { DeptShowcaseExtra } from '@/mock/adminConfigTypes';
 import { useAppStore } from '@/store';
 import AdminPageHeader from '../AdminPageHeader';
@@ -13,6 +13,8 @@ export default function DeptShowcaseManagePage() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<DeptShowcaseExtra | null>(null);
   const [form] = Form.useForm<DeptShowcaseExtra & { shortcutsText?: string }>();
+  const [deptOptions, setDeptOptions] = useState<{ value: string; label: string }[]>([]);
+  const [deptNameById, setDeptNameById] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -27,6 +29,18 @@ export default function DeptShowcaseManagePage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    const refreshDepts = () => {
+      void departmentService.getDepartments().then((deps) => {
+        setDeptOptions(deps.map((d) => ({ value: d.id, label: `${d.name} (${d.id})` })));
+        setDeptNameById(Object.fromEntries(deps.map((d) => [d.id, d.name])));
+      });
+    };
+    refreshDepts();
+    window.addEventListener('jsjb-mock-updated', refreshDepts);
+    return () => window.removeEventListener('jsjb-mock-updated', refreshDepts);
+  }, []);
 
   const onSubmit = async () => {
     try {
@@ -81,7 +95,7 @@ export default function DeptShowcaseManagePage() {
               title: '部门名称',
               dataIndex: 'departmentId',
               width: 140,
-              render: (id: string) => mockDepartments.find((d) => d.id === id)?.name ?? id,
+              render: (id: string) => deptNameById[id] ?? id,
             },
             { title: '展示标题', dataIndex: 'heroTitle', ellipsis: true },
             { title: '电话', dataIndex: 'linkTel', width: 130 },
@@ -124,7 +138,7 @@ export default function DeptShowcaseManagePage() {
             <Select
               disabled={!!editing}
               placeholder="选择部门"
-              options={mockDepartments.map((d) => ({ value: d.id, label: `${d.name} (${d.id})` }))}
+              options={deptOptions}
             />
           </Form.Item>
           <Form.Item name="heroTitle" label="展示标题" rules={[{ required: true }]}>

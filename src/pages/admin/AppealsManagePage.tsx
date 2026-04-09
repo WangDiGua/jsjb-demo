@@ -36,13 +36,14 @@ import {
   appealService,
   aiService,
   APPEAL_STATUSES_ALLOW_TRANSFER,
-  mockDepartments,
+  departmentService,
+  mockUsers,
   questionTypeService,
   replyService,
   flowService,
 } from '@/mock';
 import type { Appeal, FlowRecord, QuestionType, Reply } from '@/mock/types';
-import type { ReplyReferenceItem } from '@/mock/aiGlm';
+import type { ReplyReferenceItem } from '@/mock/types';
 import { useAppStore } from '@/store';
 import { canAuditAppealReplies, canHandleAppeals } from '@/mock/roles';
 import AdminPageHeader from './AdminPageHeader';
@@ -85,6 +86,56 @@ const statusMap: Record<string, { color: string; text: string }> = {
 
 const HANDLER_REPORT_STATUSES: Appeal['status'][] = ['pending', 'accepted', 'processing', 'reply_draft'];
 
+function parseAppealCreateMs(t: string): number | null {
+  const n = Date.parse(t.replace(/-/g, '/'));
+  return Number.isNaN(n) ? null : n;
+}
+
+/** 演示：未办结且提交超过 7 天视为可能超期 */
+function isAppealOverdueSlack(a: Appeal): boolean {
+  if (['replied', 'closed', 'withdrawn'].includes(a.status)) return false;
+  const ms = parseAppealCreateMs(a.createTime);
+  if (ms == null) return false;
+  return (Date.now() - ms) / 86400000 > 7;
+}
+
+function isAppealFinished(a: Appeal): boolean {
+  return a.status === 'replied' || a.status === 'closed';
+}
+
+function leaderAuditDisplay(a: Appeal): { text: string; color: string } {
+  if (a.领导批示) return { text: '已批示', color: 'success' };
+  if (a.上报领导) return { text: '待领导批示', color: 'processing' };
+  if (a.status === 'reply_draft') return { text: '待发布审核', color: 'purple' };
+  return { text: '—', color: 'default' };
+}
+
+function evalStatusDisplay(a: Appeal): { text: string; color: string } {
+  if (a.评价) return { text: `已评价（${a.评价.rating}★）`, color: 'success' };
+  if (a.status === 'replied' || a.status === 'closed') return { text: '待评价', color: 'default' };
+  return { text: '—', color: 'default' };
+}
+
+function appealSubmitterUser(a: Appeal) {
+  if (a.isAnonymous) return null;
+  return mockUsers.find((x) => x.id === a.userId) ?? null;
+}
+
+function submitterUsername(a: Appeal): string {
+  const u = appealSubmitterUser(a);
+  return u?.username ?? a.userId;
+}
+
+function fmtHours(v: number | null | undefined): string {
+  if (v == null) return '—';
+  return `${v}h`;
+}
+
+function fmtDaysFromProcessHours(v: number | null | undefined): string {
+  if (v == null) return '—';
+  return `${(v / 24).toFixed(1)}`;
+}
+
 export default function AppealsManagePage() {
   const currentUser = useAppStore((s) => s.currentUser);
   const canAudit = currentUser ? canAuditAppealReplies(currentUser.role) : false;
@@ -114,6 +165,7 @@ export default function AppealsManagePage() {
   const [superviseReqForm] = Form.useForm<{ level: 'normal' | 'urgent'; note: string }>();
   const [aiTransferLoading, setAiTransferLoading] = useState(false);
   const [replyAiLoading, setReplyAiLoading] = useState(false);
+  const [replySubmitting, setReplySubmitting] = useState(false);
   const [refCandidates, setRefCandidates] = useState<ReplyReferenceItem[]>([]);
   const [refIndex, setRefIndex] = useState(0);
   const [refLoading, setRefLoading] = useState(false);
@@ -128,6 +180,7 @@ export default function AppealsManagePage() {
   const [detailAppeal, setDetailAppeal] = useState<Appeal | null>(null);
   const [detailReplies, setDetailReplies] = useState<Reply[]>([]);
   const [detailFlows, setDetailFlows] = useState<FlowRecord[]>([]);
+  const [deptSelectOptions, setDeptSelectOptions] = useState<{ value: string; label: string }[]>([]);
 
   const openDetail = (appeal: Appeal) => {
     setDetailOpen(true);
@@ -164,6 +217,17 @@ export default function AppealsManagePage() {
   }, [tick]);
 
   useEffect(() => {
+    const loadDepts = () => {
+      void departmentService.getDepartments().then((deps) =>
+        setDeptSelectOptions(deps.map((d) => ({ value: d.id, label: d.name }))),
+      );
+    };
+    loadDepts();
+    window.addEventListener('jsjb-mock-updated', loadDepts);
+    return () => window.removeEventListener('jsjb-mock-updated', loadDepts);
+  }, []);
+
+  useEffect(() => {
     if (!replyOpen || !activeAppeal) {
       setRefCandidates([]);
       setRefIndex(0);
@@ -173,7 +237,7 @@ export default function AppealsManagePage() {
     setRefLoading(true);
     setRefIndex(0);
     void aiService
-      .getReplyReferenceCandidates(activeAppeal.id, { limit: 8 })
+      .getReplyReferenceCandidates(activeAppeal.id, { limit: 4 })
       .then((items) => setRefCandidates(items))
       .catch(() => setRefCandidates([]))
       .finally(() => setRefLoading(false));
@@ -205,11 +269,69 @@ export default function AppealsManagePage() {
   const refetch = () => setTick((t) => t + 1);
 
   const exportCsv = () => {
-    const headers = ['id', 'title', 'type', 'status', 'departmentName', 'userName', 'createTime'];
+    if (!appeals.length) {
+      message.info('当前页无数据');
+      return;
+    }
+    const headers = [
+      '序号',
+      '编号',
+      '标题',
+      '类型',
+      '承办部门',
+      '办理进度',
+      '是否办结',
+      '领导审核',
+      '是否超期',
+      '办理用时天',
+      '诉求者',
+      '诉求者单位',
+      '账号',
+      '查阅状态',
+      '提交时间',
+      '浏览数',
+      '是否满意',
+      '满意时间',
+      '响应用时h',
+      '最后操作时间',
+      '联系方式',
+      '评价状态',
+      '公开',
+      '匿名',
+    ];
     const lines = [headers.join(',')].concat(
-      appeals.map((a) =>
-        headers.map((h) => JSON.stringify(String((a as unknown as Record<string, unknown>)[h] ?? ''))).join(','),
-      ),
+      appeals.map((a, i) => {
+        const u = appealSubmitterUser(a);
+        const la = leaderAuditDisplay(a);
+        const ev = evalStatusDisplay(a);
+        const cells = [
+          String((page - 1) * pageSize + i + 1),
+          a.id,
+          a.title,
+          a.type,
+          a.departmentName,
+          statusMap[a.status]?.text ?? a.status,
+          isAppealFinished(a) ? '是' : '否',
+          la.text,
+          isAppealOverdueSlack(a) ? '是' : '否',
+          fmtDaysFromProcessHours(a.处理时长),
+          a.isAnonymous ? '匿名' : a.userName,
+          a.isAnonymous ? '匿名' : u?.department ?? '—',
+          a.isAnonymous ? '—' : u?.username ?? a.userId,
+          (a.浏览量 ?? 0) > 0 ? '有浏览' : '无浏览',
+          a.createTime,
+          String(a.浏览量 ?? 0),
+          a.评价 ? '是' : '否',
+          a.评价?.time ?? '',
+          a.响应时长 ?? '',
+          a.updateTime,
+          a.isAnonymous ? '—' : u?.phone ?? '—',
+          ev.text,
+          a.isPublic ? '是' : '否',
+          a.isAnonymous ? '是' : '否',
+        ];
+        return cells.map((c) => JSON.stringify(String(c))).join(',');
+      }),
     );
     const blob = new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -345,22 +467,143 @@ export default function AppealsManagePage() {
             loading={loading}
             dataSource={appeals}
             rowKey="id"
+            size="small"
+            scroll={{ x: 2900 }}
             columns={[
-              { title: '编号', dataIndex: 'id', width: 100 },
-              { title: '标题', dataIndex: 'title', ellipsis: true },
-              { title: '类型', dataIndex: 'type', width: 100 },
-              { title: '部门', dataIndex: 'departmentName', width: 120 },
               {
-                title: '状态',
+                title: '序号',
+                width: 56,
+                fixed: 'left',
+                render: (_, __, index) => (page - 1) * pageSize + index + 1,
+              },
+              { title: '编号', dataIndex: 'id', width: 168, fixed: 'left', ellipsis: true },
+              { title: '诉求标题', dataIndex: 'title', width: 200, ellipsis: true },
+              {
+                title: '诉求类别',
+                dataIndex: 'type',
+                width: 100,
+                render: (v: string) => (
+                  <Tag className="!mr-0" bordered>
+                    {v}
+                  </Tag>
+                ),
+              },
+              { title: '承办部门', dataIndex: 'departmentName', width: 120, ellipsis: true },
+              {
+                title: '办理进度',
                 dataIndex: 'status',
-                width: 120,
+                width: 112,
                 render: (v: string) => <Tag color={statusMap[v]?.color}>{statusMap[v]?.text ?? v}</Tag>,
               },
-              { title: '提交人', dataIndex: 'userName', width: 100 },
-              { title: '提交时间', dataIndex: 'createTime', width: 180 },
-           {
+              {
+                title: '是否办结',
+                width: 88,
+                render: (_, a: Appeal) =>
+                  isAppealFinished(a) ? (
+                    <Tag color="success">是</Tag>
+                  ) : (
+                    <Tag>否</Tag>
+                  ),
+              },
+              {
+                title: '领导审核',
+                width: 108,
+                render: (_, a: Appeal) => {
+                  const x = leaderAuditDisplay(a);
+                  return x.text === '—' ? (
+                    <span className="text-on-surface-variant">—</span>
+                  ) : (
+                    <Tag color={x.color}>{x.text}</Tag>
+                  );
+                },
+              },
+              {
+                title: '是否超期',
+                width: 88,
+                render: (_, a: Appeal) =>
+                  isAppealOverdueSlack(a) ? (
+                    <Tag color="error">是</Tag>
+                  ) : (
+                    <Tag>否</Tag>
+                  ),
+              },
+              {
+                title: '办理用时(天)',
+                width: 104,
+                render: (_, a: Appeal) => fmtDaysFromProcessHours(a.处理时长),
+              },
+              {
+                title: '诉求者',
+                dataIndex: 'userName',
+                width: 100,
+                ellipsis: true,
+                render: (v: string, a: Appeal) => (a.isAnonymous ? '匿名' : v),
+              },
+              {
+                title: '诉求者单位',
+                width: 120,
+                ellipsis: true,
+                render: (_, a: Appeal) => {
+                  const u = appealSubmitterUser(a);
+                  return a.isAnonymous ? '匿名' : u?.department ?? '—';
+                },
+              },
+              {
+                title: '账号',
+                width: 120,
+                ellipsis: true,
+                render: (_, a: Appeal) => (a.isAnonymous ? '—' : submitterUsername(a)),
+              },
+              {
+                title: '查阅状态',
+                width: 92,
+                render: (_, a: Appeal) =>
+                  (a.浏览量 ?? 0) > 0 ? <Tag>有浏览</Tag> : <Tag>无浏览</Tag>,
+              },
+              { title: '提交时间', dataIndex: 'createTime', width: 156 },
+              { title: '浏览数', dataIndex: '浏览量', width: 72 },
+              {
+                title: '是否满意',
+                width: 84,
+                render: (_, a: Appeal) => (a.评价 ? <Tag color="success">是</Tag> : <Tag>否</Tag>),
+              },
+              {
+                title: '满意时间',
+                width: 156,
+                render: (_, a: Appeal) => a.评价?.time ?? '—',
+              },
+              {
+                title: '响应用时',
+                width: 88,
+                render: (_, a: Appeal) => fmtHours(a.响应时长),
+              },
+              { title: '最后操作时间', dataIndex: 'updateTime', width: 156 },
+              {
+                title: '联系方式',
+                width: 112,
+                render: (_, a: Appeal) => (a.isAnonymous ? '—' : appealSubmitterUser(a)?.phone ?? '—'),
+              },
+              {
+                title: '评价状态',
+                width: 128,
+                render: (_, a: Appeal) => {
+                  const x = evalStatusDisplay(a);
+                  return x.text === '—' ? (
+                    <span className="text-on-surface-variant">—</span>
+                  ) : (
+                    <Tag color={x.color}>{x.text}</Tag>
+                  );
+                },
+              },
+              {
+                title: '首次答复耗时',
+                width: 100,
+                render: (_, a: Appeal) => fmtHours(a.响应时长),
+              },
+              {
                 title: '操作',
                 width: 160,
+                fixed: 'right',
                 render: (_, record) => (
                   <Dropdown
                     menu={{
@@ -602,8 +845,11 @@ export default function AppealsManagePage() {
           setActiveAppeal(null);
           setRefCandidates([]);
           setRefIndex(0);
+          setReplySubmitting(false);
         }}
         destroyOnHidden
+        confirmLoading={replySubmitting}
+        okButtonProps={{ disabled: replyAiLoading }}
         onOk={() => replyForm.submit()}
         width={760}
       >
@@ -615,32 +861,26 @@ export default function AppealsManagePage() {
           layout="vertical"
           onFinish={async (values) => {
             if (!activeAppeal || !currentUser) return;
+            setReplySubmitting(true);
             try {
-              const sens = await aiService.checkSensitiveWords(String(values.content).trim());
-              if (!sens.ok) {
-                message.error('内容安全检测未完成，请检查网络或大模型配置');
-                return;
-              }
-              if (sens.hasSensitive) {
-                message.error(`答复包含不适宜表述：${sens.words.join('、')}`);
-                return;
-              }
-            } catch {
-              message.error('敏感词检测失败');
-              return;
+              // 敏感词仅在 submitReplyForReview 内检测一次，避免重复请求大模型导致确定按钮长时间无响应
+              const r = await appealService.submitReplyForReview(
+                activeAppeal.id,
+                values.content,
+                values.isPublic,
+                { operatorId: currentUser.id, operatorName: currentUser.nickname },
+              );
+              if (r) {
+                message.success('已提交审核');
+                setReplyOpen(false);
+                setActiveAppeal(null);
+                refetch();
+              } else message.error('当前状态不可答复');
+            } catch (e) {
+              message.error(e instanceof Error ? e.message : '提交失败');
+            } finally {
+              setReplySubmitting(false);
             }
-            const r = await appealService.submitReplyForReview(
-              activeAppeal.id,
-              values.content,
-              values.isPublic,
-              { operatorId: currentUser.id, operatorName: currentUser.nickname },
-            );
-            if (r) {
-              message.success('已提交审核');
-              setReplyOpen(false);
-              setActiveAppeal(null);
-              refetch();
-            } else message.error('当前状态不可答复');
           }}
         >
           <Form.Item label="答复内容" required>
@@ -970,7 +1210,7 @@ export default function AppealsManagePage() {
           }}
         >
           <Form.Item name="departmentId" label="目标部门" rules={[{ required: true, message: '请选择部门' }]}>
-            <Select placeholder="选择部门" showSearch optionFilterProp="label" options={mockDepartments.map((d) => ({ value: d.id, label: d.name }))} />
+            <Select placeholder="选择部门" showSearch optionFilterProp="label" options={deptSelectOptions} />
           </Form.Item>
         </Form>
       </Modal>

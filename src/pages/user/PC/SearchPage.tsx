@@ -6,6 +6,7 @@ import { useIsMobileLayout } from '@/context/MobileLayoutContext';
 import MobileSubPageScaffold from '@/components/mobile/MobileSubPageScaffold';
 import { PortalButton } from './ui';
 import { useMockDbUpdated } from '@/hooks/useMockDbUpdated';
+import { portalToast } from './shell/portalFeedbackStore';
 
 const statusMap: Record<string, string> = {
   pending: '待受理',
@@ -175,7 +176,14 @@ export default function SearchPage() {
 
   useEffect(() => {
     setEffLoading(true);
-    void statisticsService.getPortalEfficiency().then(setEfficiency).finally(() => setEffLoading(false));
+    void statisticsService
+      .getPortalEfficiency()
+      .then(setEfficiency)
+      .catch((e) => {
+        portalToast.error(e instanceof Error ? e.message : '效能数据加载失败');
+        setEfficiency(null);
+      })
+      .finally(() => setEffLoading(false));
   }, [dbTick]);
 
   const runSearch = useCallback(async (value: string, typeParam?: string | null, statusParam?: string | null) => {
@@ -203,6 +211,9 @@ export default function SearchPage() {
         data = data.filter((a) => a.status === statusFilter);
       }
       setResults(data);
+    } catch (e) {
+      portalToast.error(e instanceof Error ? e.message : '检索失败');
+      setResults([]);
     } finally {
       setLoading(false);
     }
