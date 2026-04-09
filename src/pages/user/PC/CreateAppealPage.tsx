@@ -296,42 +296,65 @@ export default function CreateAppealPage() {
   const aiAllComplete = !aiLoad && !!recDept && !!recType && mergedText.length >= 14;
   const aiHelper =
     mergedText.length < 14
-      ? '第 1 步：请填写标题与正文（合计约 14 字以上），系统才能推荐部门与类型。'
+      ? '先写标题与正文（合计 ≥14 字），以便推荐部门与类型。'
       : aiLoad
-        ? '第 2 步：正在执行部门匹配与问题类型识别（含短暂防抖），请稍候。'
+        ? '正在匹配部门与问题类型（含短暂防抖）…'
         : recDept && recType
-          ? '第 3 步：建议已生成，可「一键填入」或按需手改。'
-          : '第 2 步：未能得到推荐（如网络/模型不可用），请直接在下方表单中选择部门与类型。';
+          ? '建议已就绪：可一键填入，或自行微调后提交。'
+          : '未拿到推荐时，请在表单中手动选择部门与类型。';
+
+  const quickEntryClass =
+    'group flex min-h-11 items-center gap-2.5 rounded-lg border border-outline-variant/18 bg-surface/60 px-3 py-2 text-xs font-semibold text-on-surface transition-colors hover:border-primary/28 hover:bg-primary/[0.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:text-sm';
 
   const contextualTools = (
-    <div className="space-y-2 lg:space-y-2.5">
-      <div className="flex flex-col gap-2 rounded-xl border border-outline-variant/20 bg-surface-container-low/50 px-3 py-2.5 text-xs sm:text-sm">
-        <span className="font-bold text-on-surface">快捷入口</span>
-        <div className="flex flex-col gap-1.5">
-          <Link to="/user/appeal/list" className="font-semibold text-primary hover:underline">
-            公开诉求库
+    <div className="space-y-3 md:space-y-4">
+      <div className="rounded-xl border border-outline-variant/20 bg-surface-container-low/40 px-3 py-3 dark:bg-surface-container-low/25">
+        <p className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.08em] text-on-surface-variant">快捷入口</p>
+        <nav aria-label="快捷入口" className="flex flex-col gap-2">
+          <Link to="/user/appeal/list" className={quickEntryClass}>
+            <span className="material-symbols-outlined shrink-0 text-[18px] text-primary" aria-hidden>
+              lists
+            </span>
+            <span className="min-w-0 leading-snug">公开诉求库</span>
+            <span className="material-symbols-outlined ml-auto shrink-0 text-[18px] text-on-surface-variant opacity-60 transition-transform group-hover:translate-x-0.5" aria-hidden>
+              chevron_right
+            </span>
           </Link>
-          <Link to="/user/appeal/list?sort=popular" className="font-semibold text-primary hover:underline">
-            热门浏览
+          <Link to="/user/appeal/list?sort=popular" className={quickEntryClass}>
+            <span className="material-symbols-outlined shrink-0 text-[18px] text-primary" aria-hidden>
+              trending_up
+            </span>
+            <span className="min-w-0 leading-snug">热门浏览</span>
+            <span className="material-symbols-outlined ml-auto shrink-0 text-[18px] text-on-surface-variant opacity-60 transition-transform group-hover:translate-x-0.5" aria-hidden>
+              chevron_right
+            </span>
           </Link>
-          <Link to="/user/ai-assistant" className="font-semibold text-primary hover:underline">
-            政策智能问答
+          <Link to="/user/ai-assistant" className={quickEntryClass}>
+            <span className="material-symbols-outlined shrink-0 text-[18px] text-primary" aria-hidden>
+              auto_awesome
+            </span>
+            <span className="min-w-0 leading-snug">政策智能问答</span>
+            <span className="material-symbols-outlined ml-auto shrink-0 text-[18px] text-on-surface-variant opacity-60 transition-transform group-hover:translate-x-0.5" aria-hidden>
+              chevron_right
+            </span>
           </Link>
-        </div>
+        </nav>
       </div>
 
-      <details className="rounded-xl border border-outline-variant/20 bg-surface-container-lowest shadow-sm open:ring-1 open:ring-primary/10">
+      <details className="group/case rounded-xl border border-outline-variant/20 bg-surface-container-lowest shadow-sm open:ring-1 open:ring-primary/10">
         <summary className="cursor-pointer list-none px-3 py-2.5 font-headline text-xs font-bold text-on-surface marker:hidden sm:text-sm [&::-webkit-details-marker]:hidden">
           <span className="flex items-center justify-between gap-2">
-            <span className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary">menu_book</span>
-              参考办结案例
+            <span className="flex min-w-0 items-center gap-2">
+              <span className="material-symbols-outlined shrink-0 text-primary">menu_book</span>
+              <span className="truncate">AI智能推荐</span>
             </span>
-            <span className="material-symbols-outlined text-on-surface-variant">expand_more</span>
+            <span className="material-symbols-outlined shrink-0 text-on-surface-variant transition-transform duration-200 group-open/case:rotate-180">
+              expand_more
+            </span>
           </span>
         </summary>
-        <div className="border-t border-outline-variant/15 px-3 py-2.5">
-          <ul className="max-h-48 space-y-2 overflow-y-auto text-xs sm:text-sm [scrollbar-width:thin]">
+        <div className="border-t border-outline-variant/15 px-3 py-3">
+          <ul className="space-y-2 text-xs sm:text-sm">
             {getDb()
               .appeals.filter((a) => a.status === 'replied')
               .slice(0, 5)
@@ -345,14 +368,16 @@ export default function CreateAppealPage() {
         </div>
       </details>
 
-      <details className="rounded-xl border border-outline-variant/20 bg-surface-container-lowest shadow-sm open:ring-1 open:ring-primary/10">
+      <details className="group/draft rounded-xl border border-outline-variant/20 bg-surface-container-lowest shadow-sm open:ring-1 open:ring-primary/10">
         <summary className="cursor-pointer list-none px-3 py-2.5 font-headline text-xs font-bold text-on-surface marker:hidden sm:text-sm [&::-webkit-details-marker]:hidden">
           <span className="flex items-center justify-between gap-2">
-            <span className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary text-[18px]">edit_note</span>
-              诉求帮写
+            <span className="flex min-w-0 items-center gap-2">
+              <span className="material-symbols-outlined shrink-0 text-primary text-[18px]">edit_note</span>
+              <span className="truncate">诉求帮写</span>
             </span>
-            <span className="material-symbols-outlined text-on-surface-variant text-[18px]">expand_more</span>
+            <span className="material-symbols-outlined shrink-0 text-on-surface-variant text-[18px] transition-transform duration-200 group-open/draft:rotate-180">
+              expand_more
+            </span>
           </span>
         </summary>
         <div className="space-y-2 border-t border-outline-variant/15 px-3 py-2.5">
@@ -417,14 +442,16 @@ export default function CreateAppealPage() {
         </div>
       </details>
 
-      <details className="rounded-xl border border-outline-variant/20 bg-surface-container-lowest shadow-sm open:ring-1 open:ring-primary/10">
+      <details className="group/dup rounded-xl border border-outline-variant/20 bg-surface-container-lowest shadow-sm open:ring-1 open:ring-primary/10">
         <summary className="cursor-pointer list-none px-3 py-2.5 font-headline text-xs font-bold text-on-surface marker:hidden sm:text-sm [&::-webkit-details-marker]:hidden">
           <span className="flex items-center justify-between gap-2">
-            <span className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary text-[18px]">difference</span>
-              智能判重
+            <span className="flex min-w-0 items-center gap-2">
+              <span className="material-symbols-outlined shrink-0 text-primary text-[18px]">difference</span>
+              <span className="truncate">智能判重</span>
             </span>
-            <span className="material-symbols-outlined text-on-surface-variant text-[18px]">expand_more</span>
+            <span className="material-symbols-outlined shrink-0 text-on-surface-variant text-[18px] transition-transform duration-200 group-open/dup:rotate-180">
+              expand_more
+            </span>
           </span>
         </summary>
         <div className="space-y-2 border-t border-outline-variant/15 px-3 py-2.5">
@@ -471,14 +498,16 @@ export default function CreateAppealPage() {
         </div>
       </details>
 
-      <details className="rounded-xl border border-outline-variant/20 bg-surface-container-lowest shadow-sm open:ring-1 open:ring-primary/10">
+      <details className="group/tr rounded-xl border border-outline-variant/20 bg-surface-container-lowest shadow-sm open:ring-1 open:ring-primary/10">
         <summary className="cursor-pointer list-none px-3 py-2.5 font-headline text-xs font-bold text-on-surface marker:hidden sm:text-sm [&::-webkit-details-marker]:hidden">
           <span className="flex items-center justify-between gap-2">
-            <span className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary text-[18px]">translate</span>
-              中英日翻译
+            <span className="flex min-w-0 items-center gap-2">
+              <span className="material-symbols-outlined shrink-0 text-primary text-[18px]">translate</span>
+              <span className="truncate">中英日翻译</span>
             </span>
-            <span className="material-symbols-outlined text-on-surface-variant text-[18px]">expand_more</span>
+            <span className="material-symbols-outlined shrink-0 text-on-surface-variant text-[18px] transition-transform duration-200 group-open/tr:rotate-180">
+              expand_more
+            </span>
           </span>
         </summary>
         <div className="space-y-2 border-t border-outline-variant/15 px-3 py-2.5">
@@ -553,11 +582,38 @@ export default function CreateAppealPage() {
     </div>
   );
 
-  const aiBanner = (
-    <div className="space-y-3 rounded-lg border border-primary/20 bg-primary/5 px-4 py-4">
-      <div className="flex flex-wrap items-center gap-2 text-sm">
-        <span className="material-symbols-outlined text-primary">bolt</span>
-        <span className="font-bold text-on-surface">智能辅助</span>
+  const aiSuggestionsFooter =
+    recDept && recType && !aiLoad ? (
+      <div className="flex flex-col gap-2 border-t border-outline-variant/15 pt-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
+        <span className="text-xs font-medium text-on-surface-variant sm:text-sm">当前建议</span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-lg border border-primary/15 bg-primary/[0.06] px-2 py-0.5 text-xs font-semibold text-primary dark:bg-primary/10">
+            {recTypeLabel}
+          </span>
+          <span className="rounded-lg border border-secondary/15 bg-secondary/[0.06] px-2 py-0.5 text-xs font-semibold text-secondary dark:bg-secondary/10">
+            {recDeptLabel}
+          </span>
+          <PortalButton variant="primary" size="sm" className="rounded-lg px-3 font-bold" onClick={applyAi}>
+            一键填入
+          </PortalButton>
+        </div>
+      </div>
+    ) : null;
+
+  const aiBanner = (taskLayout: 'vertical' | 'responsive') => (
+    <div className="space-y-3 rounded-xl border border-outline-variant/20 bg-surface-container-lowest/90 px-3 py-3 shadow-sm dark:bg-surface-container-lowest/60 md:px-3.5 md:py-3.5">
+      <div className="flex gap-2.5 rounded-lg border-l-[3px] border-l-primary bg-surface/50 py-2 pl-2.5 pr-2 dark:bg-surface/30">
+        <span className="material-symbols-outlined mt-0.5 shrink-0 text-[22px] text-primary" aria-hidden>
+          bolt
+        </span>
+        <div className="min-w-0">
+          <p className="font-headline text-sm font-bold text-on-surface">智能辅助</p>
+          <p className="mt-0.5 text-[11px] leading-relaxed text-on-surface-variant sm:text-xs">
+            {taskLayout === 'vertical'
+              ? '窄栏采用纵向步骤，随表单滚动即可对照进度。'
+              : '宽屏可横向浏览步骤；需要时下滑使用案例与工具。'}
+          </p>
+        </div>
       </div>
       <AiTaskProgress
         steps={['撰写标题与正文', '匹配部门与类型', '应用到表单']}
@@ -565,17 +621,14 @@ export default function CreateAppealPage() {
         allComplete={aiAllComplete}
         helperText={aiHelper}
         showElapsed={mergedText.length >= 14 && !!(aiLoad || aiAllComplete)}
+        layout={taskLayout}
+        className={
+          taskLayout === 'vertical'
+            ? '!border-0 !bg-transparent !px-0 !py-0 !shadow-none sm:!px-0'
+            : undefined
+        }
       />
-      {recDept && recType && !aiLoad ? (
-        <div className="flex flex-wrap items-center gap-2 border-t border-primary/10 pt-3 text-sm">
-          <span className="text-on-surface-variant">当前建议：</span>
-          <span className="rounded-lg bg-surface-container-lowest px-2 py-0.5 text-xs font-semibold text-primary">{recTypeLabel}</span>
-          <span className="rounded-lg bg-surface-container-lowest px-2 py-0.5 text-xs font-semibold text-secondary">{recDeptLabel}</span>
-          <PortalButton variant="primary" size="sm" className="rounded-lg px-3" onClick={applyAi}>
-            一键填入
-          </PortalButton>
-        </div>
-      ) : null}
+      {aiSuggestionsFooter}
     </div>
   );
 
@@ -584,7 +637,7 @@ export default function CreateAppealPage() {
       <div className="min-w-0 space-y-4 md:space-y-5">
         {okMsg ? <p className="text-sm font-semibold text-success">{okMsg}</p> : null}
 
-        <div className="md:hidden">{aiBanner}</div>
+        <div className="md:hidden">{aiBanner('responsive')}</div>
 
       <form
         onSubmit={submit}
@@ -754,20 +807,19 @@ export default function CreateAppealPage() {
       </div>
 
       <aside
-        className="min-w-0 border-t border-outline-variant/20 pt-6 md:sticky md:top-24 md:mt-0 md:max-h-[calc(100vh-6rem)] md:overflow-y-auto md:border-0 md:border-l md:border-outline-variant/15 md:pl-5 md:pt-0 xl:pl-8 [scrollbar-width:thin]"
+        className="min-w-0 border-t border-outline-variant/20 pt-6 md:sticky md:top-24 md:mt-0 md:max-h-[calc(100vh-6rem)] md:overflow-y-auto md:border-0 md:border-l md:border-outline-variant/15 md:pl-5 md:pt-0 md:pr-0.5 xl:pl-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         aria-label="智能辅助与参考工具"
       >
         <div className="hidden md:block">
-          <p className="mb-2 text-xs font-bold uppercase tracking-[0.12em] text-on-surface-variant">智能辅助</p>
-          <div className="mb-6">{aiBanner}</div>
+          <div className="mb-8">{aiBanner('vertical')}</div>
         </div>
-        <h2 className="mb-2 font-headline text-base font-bold text-on-surface md:text-sm md:font-semibold">
+        <h2 className="mb-1.5 font-headline text-base font-bold text-on-surface md:text-sm md:font-semibold">
           参考与工具
         </h2>
-        <p className="mb-3 text-xs text-on-surface-variant md:mb-4">
+        <p className="mb-4 text-xs leading-relaxed text-on-surface-variant md:mb-5">
           {isMobile
             ? '以下为可选项；直接填表即可提交，需要时再展开使用。'
-            : '案例帮写、判重、翻译等；不影响提交。'}
+            : '案例帮写、判重、翻译等可选工具，不改变您左侧已填内容。'}
         </p>
         {contextualTools}
       </aside>

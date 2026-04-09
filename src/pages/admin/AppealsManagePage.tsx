@@ -84,7 +84,8 @@ const statusMap: Record<string, { color: string; text: string }> = {
   closed: { color: 'default', text: '已关闭' },
 };
 
-const HANDLER_REPORT_STATUSES: Appeal['status'][] = ['pending', 'accepted', 'processing', 'reply_draft'];
+/** 办理侧可「上报领导 / 申请督办」的状态（不含待审答复/已答复，避免与答复流程叠用） */
+const HANDLER_ESCALATION_STATUSES: Appeal['status'][] = ['pending', 'accepted', 'processing'];
 
 function parseAppealCreateMs(t: string): number | null {
   const n = Date.parse(t.replace(/-/g, '/'));
@@ -368,6 +369,10 @@ export default function AppealsManagePage() {
       return;
     }
     if (action === 'reply') {
+      if (appeal.上报领导 && !appeal.领导批示) {
+        message.warning('已上报领导批示，请先等待领导批示后再提交答复送审。');
+        return;
+      }
       setActiveAppeal(appeal);
       replyForm.resetFields();
       replyForm.setFieldsValue({ content: '', isPublic: true });
@@ -411,12 +416,28 @@ export default function AppealsManagePage() {
       return;
     }
     if (action === 'report_leader_action') {
+      if (appeal.上报领导) {
+        message.warning('该诉求已上报过领导，不可重复上报。');
+        return;
+      }
+      if (!HANDLER_ESCALATION_STATUSES.includes(appeal.status)) {
+        message.warning('当前已进入答复审核或已办结，不可再上报领导。');
+        return;
+      }
       setActiveAppeal(appeal);
       reportForm.resetFields();
       setReportOpen(true);
       return;
     }
     if (action === 'supervision_request_action') {
+      if (appeal.上报领导 && !appeal.领导批示) {
+        message.warning('待领导批示期间请先完成批示流程，再申请校办督办。');
+        return;
+      }
+      if (!HANDLER_ESCALATION_STATUSES.includes(appeal.status)) {
+        message.warning('当前已进入答复审核或已办结，不可再申请督办。');
+        return;
+      }
       setActiveAppeal(appeal);
       superviseReqForm.resetFields();
       superviseReqForm.setFieldsValue({ level: 'normal', note: '' });
@@ -614,7 +635,9 @@ export default function AppealsManagePage() {
                           key: 'reply',
                           label: '答复送审',
                           icon: <CheckOutlined />,
-                          show: record.status === 'accepted' || record.status === 'processing',
+                          show:
+                            (record.status === 'accepted' || record.status === 'processing') &&
+                            !(record.上报领导 && !record.领导批示),
                         },
                         { key: 'return', label: '退回', icon: <CloseOutlined />, show: record.status === 'pending' },
                         {
@@ -642,8 +665,8 @@ export default function AppealsManagePage() {
                           show:
                             !!currentUser &&
                             canHandleAppeals(currentUser.role) &&
-                            HANDLER_REPORT_STATUSES.includes(record.status as Appeal['status']) &&
-                            !(record.上报领导 && !record.领导批示),
+                            HANDLER_ESCALATION_STATUSES.includes(record.status as Appeal['status']) &&
+                            !record.上报领导,
                         },
                         {
                           key: 'supervision_request_action',
@@ -652,7 +675,8 @@ export default function AppealsManagePage() {
                           show:
                             !!currentUser &&
                             canHandleAppeals(currentUser.role) &&
-                            HANDLER_REPORT_STATUSES.includes(record.status as Appeal['status']),
+                            HANDLER_ESCALATION_STATUSES.includes(record.status as Appeal['status']) &&
+                            !(record.上报领导 && !record.领导批示),
                         },
                       ]
                         .filter((item) => item.show)
@@ -854,7 +878,7 @@ export default function AppealsManagePage() {
         width={760}
       >
         <p className="mb-3 text-sm text-on-surface-variant">
-          提交后将由超管/校办审核，通过前用户无法在详情中查看答复正文。
+          提交后将由超管/校办审核，通过前用户无法在详情中查看答复正文。若本单已「上报领导批示」，须等领导出具批示后方可送审。
         </p>
         <Form
           form={replyForm}
@@ -875,7 +899,7 @@ export default function AppealsManagePage() {
                 setReplyOpen(false);
                 setActiveAppeal(null);
                 refetch();
-              } else message.error('当前状态不可答复');
+              } else message.error('当前不可送审（若已上报领导，请先等待领导批示后再答复）');
             } catch (e) {
               message.error(e instanceof Error ? e.message : '提交失败');
             } finally {
@@ -1259,7 +1283,8 @@ export default function AppealsManagePage() {
         onOk={() => reportForm.submit()}
       >
         <p className="mb-3 text-sm text-on-surface-variant">
-          将记录上报原因、操作人与时间，并通知校办领导待办。诉求状态仍保持为当前「{activeAppeal ? statusMap[activeAppeal.status]?.text ?? activeAppeal.status : '—'}」等系统既有状态。
+          将记录上报原因、操作人与时间，并通知校办领导待办。同一诉求仅可上报一次；在领导出具批示前，不可提交「答复送审」，也不可「申请校办督办」。诉求状态仍保持为当前「
+          {activeAppeal ? statusMap[activeAppeal.status]?.text ?? activeAppeal.status : '—'}」等系统既有状态。
         </p>
         <Form
           form={reportForm}
@@ -1275,7 +1300,7 @@ export default function AppealsManagePage() {
               setReportOpen(false);
               setActiveAppeal(null);
               refetch();
-            } else message.error('当前不可上报（可能已有待批示记录）');
+            } else message.error('当前不可上报（可能已上报过，或已进入答复审核/办结）');
           }}
         >
           <Form.Item name="reason" label="上报原因" rules={[{ required: true, message: '请填写上报原因' }]}>
@@ -1294,6 +1319,9 @@ export default function AppealsManagePage() {
         destroyOnHidden
         onOk={() => superviseReqForm.submit()}
       >
+        <p className="mb-3 text-sm text-on-surface-variant">
+          在「待领导批示」期间不可申请督办；已进入「待审核答复」或「已答复」后亦不可再申请。
+        </p>
         <Form
           form={superviseReqForm}
           layout="vertical"
@@ -1309,7 +1337,7 @@ export default function AppealsManagePage() {
               setSuperviseReqOpen(false);
               setActiveAppeal(null);
               refetch();
-            } else message.error('申请失败');
+            } else message.error('申请失败（若待领导批示中请先完成批示，或已进入答复审核/办结）');
           }}
         >
           <Form.Item name="level" label="紧急程度" rules={[{ required: true }]}>

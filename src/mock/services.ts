@@ -33,6 +33,7 @@ import {
 } from './roles';
 import { aiService } from './aiGlm';
 import { readSystemSettings } from './adminConfigService';
+import { filterInboxForViewer, isInboxItemVisibleToViewer } from './inboxVisibility';
 
 function listDepartmentsFromDb() {
   const db = getDb();
@@ -319,6 +320,9 @@ function filterAppealsForViewer(appeals: import('./types').Appeal[], viewer?: Us
 }
 
 const REPORTABLE_APPEAL_STATUSES: Appeal['status'][] = ['pending', 'accepted', 'processing', 'reply_draft'];
+
+/** 办理人发起「上报领导 / 申请校办督办」：不含待审答复、已答复，且与「待领导批示」链互斥由下游另行判断 */
+const HANDLER_ESCALATION_APPEAL_STATUSES: Appeal['status'][] = ['pending', 'accepted', 'processing'];
 
 function filterLeaderDeskAppeals(appeals: Appeal[], viewer?: User | null): Appeal[] {
   if (!viewer || !canUseLeaderWorkbench(viewer.role)) return [];
@@ -1262,6 +1266,7 @@ export const appealService = {
     const db = getDb();
     const appeal = db.appeals.find((a) => a.id === id);
     if (!appeal || (appeal.status !== 'accepted' && appeal.status !== 'processing')) return null;
+    if (appeal.上报领导 && !appeal.领导批示) return null;
     db.replies = db.replies.filter((r) => !(r.appealId === id && r.publishStatus === 'draft'));
     db.replies.push({
       id: `reply_${Date.now()}`,
@@ -1360,8 +1365,8 @@ export const appealService = {
     if (!appeal) return null;
     const user = mockUsers.find((u) => u.id === operator.operatorId);
     if (!user || !canHandleAppeals(user.role)) return null;
-    if (!REPORTABLE_APPEAL_STATUSES.includes(appeal.status)) return null;
-    if (appeal.上报领导 && !appeal.领导批示) return null;
+    if (!HANDLER_ESCALATION_APPEAL_STATUSES.includes(appeal.status)) return null;
+    if (appeal.上报领导) return null;
     const now = new Date().toLocaleString('zh-CN');
     appeal.上报领导 = true;
     appeal.领导上报 = {
@@ -1456,7 +1461,8 @@ export const appealService = {
     if (!appeal) return null;
     const user = mockUsers.find((u) => u.id === operator.operatorId);
     if (!user || !canHandleAppeals(user.role)) return null;
-    if (!REPORTABLE_APPEAL_STATUSES.includes(appeal.status)) return null;
+    if (!HANDLER_ESCALATION_APPEAL_STATUSES.includes(appeal.status)) return null;
+    if (appeal.上报领导 && !appeal.领导批示) return null;
     const now = new Date().toLocaleString('zh-CN');
     appeal.督办等级 = level;
     appeal.updateTime = now;
@@ -1735,31 +1741,36 @@ export const statisticsService = {
 };
 
 export const notificationService = {
-  async list(userId: string) {
+  /** 按当前登录身份过滤；师生门户不展示办理端待办类站内信 */
+  async list(viewer: User | null) {
     await mockLatency();
-    return getDb()
-      .inbox.filter((i) => i.userId === userId)
-      .sort((a, b) => b.createTime.localeCompare(a.createTime));
+    if (!viewer?.id) return [];
+    const mine = getDb().inbox.filter((i) => i.userId === viewer.id);
+    return filterInboxForViewer(mine, viewer).sort((a, b) => b.createTime.localeCompare(a.createTime));
   },
 
-  async unreadCount(userId: string) {
+  async unreadCount(viewer: User | null) {
     await mockLatency();
-    return getDb().inbox.filter((i) => i.userId === userId && !i.read).length;
+    if (!viewer?.id) return 0;
+    const mine = getDb().inbox.filter((i) => i.userId === viewer.id);
+    return filterInboxForViewer(mine, viewer).filter((i) => !i.read).length;
   },
 
-  async markRead(id: string) {
+  async markRead(id: string, viewer: User | null) {
     await mockLatency();
+    if (!viewer?.id) return;
     const item = getDb().inbox.find((i) => i.id === id);
-    if (item) {
+    if (item && isInboxItemVisibleToViewer(item, viewer)) {
       item.read = true;
       saveDb();
     }
   },
 
-  async markAllRead(userId: string) {
+  async markAllRead(viewer: User | null) {
     await mockLatency();
+    if (!viewer?.id) return;
     for (const i of getDb().inbox) {
-      if (i.userId === userId) i.read = true;
+      if (isInboxItemVisibleToViewer(i, viewer)) i.read = true;
     }
     saveDb();
   },

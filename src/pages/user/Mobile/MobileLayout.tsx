@@ -36,7 +36,7 @@ export default function MobileLayout() {
   useEffect(() => {
     const load = () => {
       if (currentUser?.id) {
-        void notificationService.unreadCount(currentUser.id).then(setMyUnread);
+        void notificationService.unreadCount(currentUser).then(setMyUnread);
       } else {
         setMyUnread(0);
       }
@@ -44,7 +44,7 @@ export default function MobileLayout() {
     load();
     window.addEventListener('jsjb-mock-updated', load);
     return () => window.removeEventListener('jsjb-mock-updated', load);
-  }, [currentUser?.id]);
+  }, [currentUser?.id, currentUser?.role]);
 
   return (
     <div className="portal-mobile flex h-dvh max-h-dvh min-h-0 flex-col overflow-hidden bg-surface font-body text-on-surface antialiased">

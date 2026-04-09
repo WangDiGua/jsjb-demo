@@ -42,3 +42,6 @@ export * from './services';
 export type { MetadataI18nBundle, MetadataLocaleCode, MetadataI18nStore } from './metadataI18nTypes';
 export * from './adminConfigService';
 export * from './roles';
+export * from './adminNavPolicy';
+export * from './flowVisibility';
+export * from './inboxVisibility';

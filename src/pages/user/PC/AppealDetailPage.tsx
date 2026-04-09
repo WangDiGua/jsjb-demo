@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { appealService, replyService, flowService } from '@/mock';
+import { appealService, replyService, flowService, filterFlowRecordsForPublicPortal } from '@/mock';
 import type { Appeal, Reply, FlowRecord, FlowAction } from '@/mock/types';
 import { useAppStore } from '@/store';
 import { useIsMobileLayout } from '@/context/MobileLayoutContext';
@@ -177,6 +177,15 @@ export default function AppealDetailPage() {
     return () => window.removeEventListener('jsjb-mock-updated', onUp);
   }, [fetchData]);
 
+  const sortedFlows = useMemo(() => {
+    const visible = filterFlowRecordsForPublicPortal(flows);
+    return [...visible].sort((a, b) => {
+      const ta = new Date(a.createTime.replace(/-/g, '/')).getTime();
+      const tb = new Date(b.createTime.replace(/-/g, '/')).getTime();
+      return ta - tb;
+    });
+  }, [flows]);
+
   const handleEvaluate = async () => {
     if (!id) return;
     setEvaluating(true);
@@ -248,12 +257,6 @@ export default function AppealDetailPage() {
     }
     return empty;
   }
-
-  const sortedFlows = [...flows].sort((a, b) => {
-    const ta = new Date(a.createTime.replace(/-/g, '/')).getTime();
-    const tb = new Date(b.createTime.replace(/-/g, '/')).getTime();
-    return ta - tb;
-  });
 
   const copyRight = (
     <button
@@ -375,32 +378,6 @@ export default function AppealDetailPage() {
         ) : null}
       </DetailSection>
 
-      {appeal.领导批示 ? (
-        <section className="rounded-2xl border border-indigo-500/25 bg-indigo-500/[0.07] shadow-[0_12px_40px_-22px_rgba(67,56,202,0.25)] dark:border-indigo-400/20 dark:bg-indigo-500/10 dark:shadow-[0_12px_40px_-22px_rgba(0,0,0,0.45)]">
-          <div className="flex items-start gap-3 border-b border-indigo-500/15 px-5 py-4 sm:px-6 sm:py-5 dark:border-indigo-400/10">
-            <span
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500/15 text-[22px] text-indigo-800 material-symbols-outlined dark:text-indigo-200"
-              aria-hidden
-            >
-              account_balance
-            </span>
-            <div>
-              <h2 className="font-headline text-lg font-bold text-on-surface">校领导批示</h2>
-              <p className="mt-1 text-sm text-on-surface-variant">重要事项交办意见（如有）</p>
-            </div>
-          </div>
-          <div className="px-5 py-5 sm:px-6 sm:py-6">
-            <div className="max-w-3xl rounded-xl border border-indigo-500/20 bg-surface/80 px-4 py-4 dark:bg-surface-container-lowest/50">
-              <p className="text-sm font-semibold text-on-surface">
-                {appeal.领导批示.leaderName}
-                <span className="ml-2 font-normal text-on-surface-variant tabular-nums">{appeal.领导批示.time}</span>
-              </p>
-              <p className="mt-3 whitespace-pre-wrap text-[15px] leading-[1.75] text-on-surface">{appeal.领导批示.content}</p>
-            </div>
-          </div>
-        </section>
-      ) : null}
-
       <DetailSection icon="forum" title="部门答复" subtitle="承办单位对外发布的正式回复">
         {replies.length === 0 ? (
           <div className="rounded-xl border border-dashed border-outline-variant/35 bg-surface-container-high/25 px-6 py-12 text-center dark:border-outline-variant/45 dark:bg-surface-container/25">
@@ -493,13 +470,17 @@ export default function AppealDetailPage() {
         </DetailSection>
       ) : null}
 
-      <DetailSection icon="timeline" title="办理流程" subtitle="按时间顺序展示的关键节点">
+      <DetailSection
+        icon="timeline"
+        title="办理流程"
+        subtitle="按时间展示对您公开的节点（不含内部上报、领导批示、督办及答复送审等内部环节）"
+      >
         {sortedFlows.length === 0 ? (
           <div className="rounded-xl border border-dashed border-outline-variant/35 bg-surface-container-high/25 px-6 py-10 text-center dark:border-outline-variant/45 dark:bg-surface-container/25">
             <span className="material-symbols-outlined text-4xl text-on-surface-variant/35">timeline</span>
-            <p className="mt-3 text-sm font-semibold text-on-surface">暂无流程记录</p>
+            <p className="mt-3 text-sm font-semibold text-on-surface">暂无可见流程记录</p>
             <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-on-surface-variant">
-              提交、受理、答复等节点会在办理过程中自动写入。若诉求刚创建，请稍后刷新查看。
+              提交、受理等对外节点会在办理中写入；若仅有内部办理记录，此处可能暂时为空。您也可通过上方整体状态了解进度。
             </p>
           </div>
         ) : (

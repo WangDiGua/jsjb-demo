@@ -154,7 +154,7 @@ export default function PortalHeader() {
                         className="w-full rounded-none border-t border-outline-variant/20 py-2.5 text-xs font-semibold text-primary hover:bg-surface-container-lowest/60 dark:hover:bg-surface-container-low/5"
                         onClick={() =>
                           void notificationService
-                            .markAllRead(currentUser.id)
+                            .markAllRead(currentUser)
                             .then(() => refreshInbox())
                             .then(() => portalToast.success('已全部标为已读'))
                             .catch((e) => portalToast.error(e instanceof Error ? e.message : '操作失败'))

@@ -23,6 +23,18 @@
   --shadow-hover: 0 16px 48px rgba(15, 35, 52, 0.14);
 }
 
+/* 文档根滚动条（Windows 下易为「经典」样式）：隐藏但保持可滚动 */
+html {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -34,6 +46,27 @@
 
 *::-webkit-scrollbar {
   display: none;
+  width: 0;
+  height: 0;
+}
+
+/* Ant Design 浮层挂在 body 下，不继承 .admin-app，单独隐藏滚动条 */
+.ant-dropdown-menu,
+.ant-select-dropdown,
+.ant-picker-dropdown,
+.ant-cascader-menus {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.ant-dropdown-menu::-webkit-scrollbar,
+.ant-select-dropdown::-webkit-scrollbar,
+.ant-select-dropdown .rc-virtual-list-holder::-webkit-scrollbar,
+.ant-picker-dropdown::-webkit-scrollbar,
+.ant-cascader-menus::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 body {

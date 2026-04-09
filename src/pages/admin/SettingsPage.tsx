@@ -258,16 +258,35 @@ export default function SettingsPage() {
                             添加
                           </Button>
                         </div>
-                        <Flex vertical gap={0} className="word-rows">
-                          {sensitiveWords.map((word) => (
-                            <Flex key={word} align="center" justify="space-between" className="word-row">
-                              <Tag color="red">{word}</Tag>
-                              <Button type="link" danger size="small" icon={<DeleteOutlined />} onClick={() => removeWord(word)}>
-                                删除
-                              </Button>
-                            </Flex>
-                          ))}
-                        </Flex>
+                        <div className="word-chips-toolbar">
+                          <Typography.Text type="secondary" className="!text-xs">
+                            共 {sensitiveWords.length} 条 · 点击标签右侧关闭图标即可删除
+                          </Typography.Text>
+                        </div>
+                        <div className="word-chips" role="list" aria-label="敏感词列表">
+                          {sensitiveWords.length === 0 ? (
+                            <Typography.Text type="secondary" className="word-chips-empty">
+                              暂无敏感词，可单个添加或批量导入。
+                            </Typography.Text>
+                          ) : (
+                            sensitiveWords.map((word) => (
+                              <Tag
+                                key={word}
+                                color="red"
+                                closable
+                                closeIcon={<DeleteOutlined aria-hidden />}
+                                onClose={(e) => {
+                                  e.preventDefault();
+                                  removeWord(word);
+                                }}
+                                className="sensitive-word-chip"
+                                role="listitem"
+                              >
+                                {word}
+                              </Tag>
+                            ))
+                          )}
+                        </div>
                         <div className="import-section">
                           <Divider>批量导入</Divider>
                           <Upload
@@ -451,12 +470,26 @@ export default function SettingsPage() {
       </main>
 
       <style>{`
-        .word-row { padding: 12px 0; border-bottom: 1px solid rgb(var(--tw-color-outline-variant) / 0.45); }
-        .word-row:last-child { border-bottom: none; }
         .sys-mgmt-row { padding: 16px 0; border-bottom: 1px solid rgb(var(--tw-color-outline-variant) / 0.45); }
         .sys-mgmt-row:last-child { border-bottom: none; }
         .settings-card { min-height: 480px; }
-        .sensitive-words .add-word { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+        .sensitive-words .add-word { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
+        .sensitive-words .word-chips-toolbar { margin-bottom: 8px; }
+        .sensitive-words .word-chips {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px 10px;
+          align-items: center;
+          align-content: flex-start;
+          min-height: 48px;
+          padding: 12px 14px;
+          border-radius: 12px;
+          border: 1px solid rgb(var(--tw-color-outline-variant) / 0.4);
+          background: rgb(var(--tw-color-surface-container-lowest) / 0.65);
+        }
+        .sensitive-words .word-chips-empty { display: block; width: 100%; text-align: center; padding: 8px 0; }
+        .sensitive-words :global(.sensitive-word-chip) { margin: 0 !important; padding-inline: 10px 6px; line-height: 26px; }
+        .sensitive-words :global(.sensitive-word-chip .ant-tag-close-icon) { margin-inline-start: 4px; }
         .sensitive-words .import-section { margin-top: 24px; }
         .sensitive-words .tip { color: rgb(var(--tw-color-on-surface-variant) / 1); font-size: 12px; margin-top: 8px; opacity: 0.92; }
         :global(.settings-page .ant-tabs-nav) { min-width: 150px; }

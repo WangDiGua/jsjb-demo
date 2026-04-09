@@ -19,8 +19,8 @@ export function usePortalInbox() {
     }
     try {
       const [list, n] = await Promise.all([
-        notificationService.list(currentUser.id),
-        notificationService.unreadCount(currentUser.id),
+        notificationService.list(currentUser),
+        notificationService.unreadCount(currentUser),
       ]);
       setInbox(list);
       setUnread(n);
@@ -38,7 +38,7 @@ export function usePortalInbox() {
 
   const openInboxItem = async (item: InboxItem) => {
     try {
-      await notificationService.markRead(item.id);
+      await notificationService.markRead(item.id, currentUser);
       await refreshInbox();
       if (item.href) navigate(item.href);
     } catch (e) {

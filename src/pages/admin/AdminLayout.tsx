@@ -1,8 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import type { MenuProps } from 'antd';
-import { Dropdown, Menu, message } from 'antd';
-import { appealService, notificationService, ROLE_LABELS, canUseLeaderWorkbench } from '@/mock';
+import { Badge, Dropdown, Menu, Popover, message } from 'antd';
+import {
+  appealService,
+  notificationService,
+  ROLE_LABELS,
+  canAccessAdminRoute,
+  canUseLeaderWorkbench,
+  type InboxItem,
+} from '@/mock';
 import { useAppStore } from '@/store';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import ScrollToTop from '@/components/shell/ScrollToTop';
@@ -53,6 +60,8 @@ export default function AdminLayout() {
   const logout = useAppStore((s) => s.logout);
   const [pendingCount, setPendingCount] = useState(0);
   const [msgUnread, setMsgUnread] = useState(0);
+  const [inbox, setInbox] = useState<InboxItem[]>([]);
+  const [notifOpen, setNotifOpen] = useState(false);
   const [leaderDeskBadge, setLeaderDeskBadge] = useState(0);
   const openPreferences = usePreferencesStore((s) => s.openPreferences);
 
@@ -60,7 +69,8 @@ export default function AdminLayout() {
     const load = () => {
       if (!currentUser) return;
       void appealService.getPendingCountForViewer(currentUser).then(setPendingCount);
-      void notificationService.unreadCount(currentUser.id).then(setMsgUnread);
+      void notificationService.unreadCount(currentUser).then(setMsgUnread);
+      void notificationService.list(currentUser).then(setInbox);
       if (canUseLeaderWorkbench(currentUser.role)) {
         void appealService.getLeaderDeskTabCounts(currentUser).then((c) => {
           setLeaderDeskBadge(c.pending_instruct + c.pending_supervise);
@@ -79,11 +89,18 @@ export default function AdminLayout() {
   }, [currentUser]);
 
   const navGroups = useMemo((): AdminNavGroupDef[] => {
+    const role = currentUser?.role;
+    const allow = (path: string) => (role ? canAccessAdminRoute(role, path) : false);
+
     const handlingItems: NavDef[] = [
       { key: '/admin/dashboard', icon: 'dashboard', label: '数据概览', end: true },
       { key: '/admin/appeals', icon: 'gavel', label: '诉求管理', badge: pendingCount },
     ];
-    if (currentUser && canUseLeaderWorkbench(currentUser.role)) {
+    if (
+      currentUser &&
+      canUseLeaderWorkbench(currentUser.role) &&
+      allow('/admin/leader-desk')
+    ) {
       handlingItems.push({
         key: '/admin/leader-desk',
         icon: 'assignment_ind',
@@ -91,7 +108,8 @@ export default function AdminLayout() {
         badge: leaderDeskBadge,
       });
     }
-    return [
+
+    const raw: AdminNavGroupDef[] = [
       { id: 'handling', label: '诉求办理', icon: 'task_alt', items: handlingItems },
       {
         id: 'reports',
@@ -145,6 +163,15 @@ export default function AdminLayout() {
         ],
       },
     ];
+
+    if (!role) return [];
+
+    return raw
+      .map((g) => ({
+        ...g,
+        items: g.items.filter((i) => allow(i.key)),
+      }))
+      .filter((g) => g.items.length > 0);
   }, [pendingCount, leaderDeskBadge, currentUser]);
 
   const menuItems = useMemo(() => buildMenuItems(navGroups), [navGroups]);
@@ -197,6 +224,68 @@ export default function AdminLayout() {
     },
   };
 
+  const openInboxItem = async (item: InboxItem) => {
+    if (!currentUser) return;
+    try {
+      await notificationService.markRead(item.id, currentUser);
+      setNotifOpen(false);
+      if (item.href) navigate(item.href);
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : '操作失败');
+    }
+  };
+
+  const notifPanel = (
+    <div
+      className="w-[min(22rem,calc(100vw-1.25rem))] overflow-hidden rounded-xl border border-outline-variant/[0.18] bg-surface shadow-[0_12px_40px_-12px_rgba(15,23,42,0.35)] dark:border-outline-variant/25 dark:bg-surface-container-lowest dark:shadow-[0_12px_40px_-12px_rgba(0,0,0,0.55)]"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="border-b border-outline-variant/15 px-3.5 py-2.5 text-sm font-bold text-on-surface dark:border-outline-variant/20">
+        消息中心
+      </div>
+      <div className="max-h-80 overflow-y-auto">
+        {inbox.length === 0 ? (
+          <p className="px-3.5 py-8 text-center text-sm text-on-surface-variant">暂无消息</p>
+        ) : (
+          inbox.slice(0, 16).map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className="flex w-full flex-col items-stretch gap-0.5 border-b border-outline-variant/10 px-3.5 py-2.5 text-left text-sm transition-colors hover:bg-surface-container-high/50 dark:border-outline-variant/10 dark:hover:bg-surface-container/40"
+              style={{ opacity: item.read ? 0.62 : 1 }}
+              onClick={() => void openInboxItem(item)}
+            >
+              <span className="font-medium text-on-surface">
+                {!item.read ? (
+                  <span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-primary align-middle dark:bg-primary/90" />
+                ) : null}
+                {item.title}
+              </span>
+              <span className="text-xs tabular-nums text-on-surface-variant">{item.createTime}</span>
+            </button>
+          ))
+        )}
+      </div>
+      {inbox.length > 0 ? (
+        <button
+          type="button"
+          className="w-full border-t border-outline-variant/15 bg-surface-container-lowest/40 px-3 py-2.5 text-center text-xs font-semibold text-primary transition-colors hover:bg-surface-container-high/35 dark:border-outline-variant/20 dark:bg-surface-container-lowest/25 dark:hover:bg-surface-container/30"
+          onClick={() =>
+            void notificationService
+              .markAllRead(currentUser!)
+              .then(() => {
+                setNotifOpen(false);
+                message.success('已全部标为已读');
+              })
+              .catch((e) => message.error(e instanceof Error ? e.message : '操作失败'))
+          }
+        >
+          全部已读
+        </button>
+      ) : null}
+    </div>
+  );
+
   return (
     <div className="admin-app min-h-screen bg-surface font-body text-on-surface">
       <ScrollToTop />
@@ -215,7 +304,7 @@ export default function AdminLayout() {
             </div>
           </div>
 
-          <div className="min-w-0 flex-1 overflow-x-auto [-webkit-overflow-scrolling:touch]">
+          <div className="min-w-0 flex-1 overflow-x-auto [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <Menu
               mode="horizontal"
               items={menuItems}
@@ -225,27 +314,47 @@ export default function AdminLayout() {
             />
           </div>
 
-          <Dropdown menu={userMenu} trigger={['click']} placement="bottomRight">
-            <button
-              type="button"
-              className="ml-auto flex shrink-0 items-center gap-2 rounded-lg border border-outline-variant/[0.18] bg-surface-container-lowest/60 px-2 py-1.5 outline-none transition-colors hover:border-outline-variant/35 hover:bg-surface-container-high/40 focus-visible:ring-2 focus-visible:ring-primary/25 dark:border-outline-variant/20 dark:bg-surface-container-lowest/35 md:px-2.5 md:py-2"
-              aria-haspopup="menu"
-            >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 font-headline text-xs font-bold text-primary md:h-9 md:w-9 dark:bg-primary/18">
-                {currentUser?.nickname?.slice(0, 1) ?? '管'}
-              </div>
-              <div className="hidden min-w-0 max-w-[10rem] text-left sm:block">
-                <p className="truncate text-[13px] font-bold text-on-surface">{currentUser?.nickname ?? '未登录'}</p>
-                <p className="truncate text-[11px] text-on-surface-variant">
-                  {currentUser ? ROLE_LABELS[currentUser.role] : ''}
-                  {msgUnread > 0 ? ` · 消息 ${msgUnread}` : ''}
-                </p>
-              </div>
-              <span className="material-symbols-outlined hidden text-[18px] text-on-surface-variant/70 sm:block" aria-hidden>
-                expand_more
-              </span>
-            </button>
-          </Dropdown>
+          <div className="ml-auto flex shrink-0 items-center gap-1 md:gap-1.5">
+            {currentUser ? (
+              <Popover
+                open={notifOpen}
+                onOpenChange={setNotifOpen}
+                trigger={['click']}
+                placement="bottomRight"
+                content={notifPanel}
+              >
+                <button
+                  type="button"
+                  className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-variant/[0.18] bg-surface-container-lowest/60 outline-none transition-colors hover:border-outline-variant/35 hover:bg-surface-container-high/40 focus-visible:ring-2 focus-visible:ring-primary/25 dark:border-outline-variant/20 dark:bg-surface-container-lowest/35 md:h-10 md:w-10"
+                  aria-label={msgUnread > 0 ? `站内消息，${msgUnread} 条未读` : '站内消息'}
+                >
+                  <Badge count={msgUnread} size="small" offset={[-2, 2]}>
+                    <span className="material-symbols-outlined text-[20px] text-on-surface-variant" aria-hidden>
+                      notifications
+                    </span>
+                  </Badge>
+                </button>
+              </Popover>
+            ) : null}
+            <Dropdown menu={userMenu} trigger={['click']} placement="bottomRight">
+              <button
+                type="button"
+                className="flex shrink-0 items-center gap-2 rounded-lg border border-outline-variant/[0.18] bg-surface-container-lowest/60 px-2 py-1.5 outline-none transition-colors hover:border-outline-variant/35 hover:bg-surface-container-high/40 focus-visible:ring-2 focus-visible:ring-primary/25 dark:border-outline-variant/20 dark:bg-surface-container-lowest/35 md:px-2.5 md:py-2"
+                aria-haspopup="menu"
+              >
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 font-headline text-xs font-bold text-primary md:h-9 md:w-9 dark:bg-primary/18">
+                  {currentUser?.nickname?.slice(0, 1) ?? '管'}
+                </div>
+                <div className="hidden min-w-0 max-w-[10rem] text-left sm:block">
+                  <p className="truncate text-[13px] font-bold text-on-surface">{currentUser?.nickname ?? '未登录'}</p>
+                  <p className="truncate text-[11px] text-on-surface-variant">{currentUser ? ROLE_LABELS[currentUser.role] : ''}</p>
+                </div>
+                <span className="material-symbols-outlined hidden text-[18px] text-on-surface-variant/70 sm:block" aria-hidden>
+                  expand_more
+                </span>
+              </button>
+            </Dropdown>
+          </div>
         </div>
       </header>
 

@@ -385,7 +385,7 @@ export default function AIDemoPage() {
                   </span>
                 </span>
               </summary>
-              <div className="flex gap-2 overflow-x-auto pb-2 pt-1 [scrollbar-width:thin]">
+              <div className="flex gap-2 overflow-x-auto pb-2 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {hotSuggestTitles.slice(0, 8).map((t) => suggestChip(t))}
               </div>
             </details>

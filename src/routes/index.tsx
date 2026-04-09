@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import UserRootLayout from '@/pages/user/UserRootLayout';
 import AdminGuard from '@/pages/admin/AdminGuard';
 import AdminLayout from '@/pages/admin/AdminLayout';
+import AdminPermissionOutlet from '@/pages/admin/AdminPermissionOutlet';
 import SessionRoot from '@/components/shell/SessionRoot';
 import {
   AbnormalUsersPage,
@@ -88,26 +89,31 @@ export const router = createBrowserRouter([
               {
                 element: <AdminLayout />,
                 children: [
-                  { index: true, element: <Navigate to="dashboard" replace /> },
-                  { path: 'dashboard', element: <DashboardPage /> },
-                  { path: 'appeals', element: <AppealsManagePage /> },
-                  { path: 'leader-desk', element: <LeaderWorkbenchPage /> },
-                  { path: 'departments', element: <DepartmentsManagePage /> },
-                  { path: 'types', element: <TypesManagePage /> },
-                  { path: 'statistics', element: <StatisticsPage /> },
-                  { path: 'weekly-report', element: <WeeklyReportPage /> },
-                  { path: 'settings', element: <SettingsPage /> },
-                  { path: 'forms', element: <FormsManagePage /> },
-                  { path: 'workflow', element: <WorkflowPage /> },
-                  { path: 'roles', element: <RolesManagePage /> },
-                  { path: 'dept-showcase', element: <DeptShowcaseManagePage /> },
-                  { path: 'abnormal-users', element: <AbnormalUsersPage /> },
-                  { path: 'notices-admin', element: <NoticesManagePage /> },
-                  { path: 'ui-config', element: <UiManagePage /> },
-                  { path: 'system', element: <SystemManagePage /> },
-                  { path: 'scheduler', element: <SchedulerPage /> },
-                  { path: 'knowledge', element: <KnowledgeBasePage /> },
-                  { path: 'robots', element: <RobotManagePage /> },
+                  {
+                    element: <AdminPermissionOutlet />,
+                    children: [
+                      { index: true, element: <Navigate to="dashboard" replace /> },
+                      { path: 'dashboard', element: <DashboardPage /> },
+                      { path: 'appeals', element: <AppealsManagePage /> },
+                      { path: 'leader-desk', element: <LeaderWorkbenchPage /> },
+                      { path: 'departments', element: <DepartmentsManagePage /> },
+                      { path: 'types', element: <TypesManagePage /> },
+                      { path: 'statistics', element: <StatisticsPage /> },
+                      { path: 'weekly-report', element: <WeeklyReportPage /> },
+                      { path: 'settings', element: <SettingsPage /> },
+                      { path: 'forms', element: <FormsManagePage /> },
+                      { path: 'workflow', element: <WorkflowPage /> },
+                      { path: 'roles', element: <RolesManagePage /> },
+                      { path: 'dept-showcase', element: <DeptShowcaseManagePage /> },
+                      { path: 'abnormal-users', element: <AbnormalUsersPage /> },
+                      { path: 'notices-admin', element: <NoticesManagePage /> },
+                      { path: 'ui-config', element: <UiManagePage /> },
+                      { path: 'system', element: <SystemManagePage /> },
+                      { path: 'scheduler', element: <SchedulerPage /> },
+                      { path: 'knowledge', element: <KnowledgeBasePage /> },
+                      { path: 'robots', element: <RobotManagePage /> },
+                    ],
+                  },
                 ],
               },
             ],

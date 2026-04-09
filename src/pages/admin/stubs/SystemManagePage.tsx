@@ -57,12 +57,13 @@ export default function SystemManagePage() {
               label: '菜单与权限（说明）',
               children: (
                 <Typography.Paragraph className="text-on-surface-variant">
-                  系统<strong>登录身份</strong>角色与用户主数据一致（student / handler / admin / leader 等），与
-                  <strong>业务角色配置</strong>（业务角色管理页）相互独立。侧栏菜单由路由注册；可按权限在{' '}
-                  <code>AdminLayout</code> 内依据 <code>currentUser.role</code> 过滤 <code>extDefs</code>。
+                  系统<strong>登录身份</strong>角色与用户主数据一致（student / teacher / admin / handler / dept_leader /
+                  leader），与 <strong>业务角色配置</strong>（业务角色管理页）相互独立。顶部菜单与可访问路由由{' '}
+                  <code>src/mock/adminNavPolicy.ts</code> 定义，<code>AdminLayout</code> 按角色过滤分组；子路由由{' '}
+                  <code>AdminPermissionOutlet</code> 二次校验，避免仅靠隐藏菜单绕过。
                   <br />
                   <br />
-                  管理端由 <code>AdminGuard</code> 守护：仅 admin / handler / leader 等具备办理权限的账号可进入。
+                  管理端由 <code>AdminGuard</code> 守护：仅具备管理端入口的角色可登录后台。
                 </Typography.Paragraph>
               ),
             },
