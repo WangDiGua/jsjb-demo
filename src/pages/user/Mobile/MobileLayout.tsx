@@ -44,17 +44,17 @@ export default function MobileLayout() {
     load();
     window.addEventListener('jsjb-mock-updated', load);
     return () => window.removeEventListener('jsjb-mock-updated', load);
-  }, [currentUser?.id, currentUser?.role]);
+  }, [currentUser]);
 
   return (
-    <div className="portal-mobile flex h-dvh max-h-dvh min-h-0 flex-col overflow-hidden bg-surface font-body text-on-surface antialiased">
+    <div className="portal-mobile m-service-hall-bg flex h-dvh max-h-dvh min-h-0 flex-col overflow-hidden bg-surface font-body text-on-surface antialiased">
       {/*
         上安全区放在滚动容器外，避免内部 sticky top-0 顶栏贴到刘海/Dynamic Island 下沿。
         viewport-fit=cover 时 env(safe-area-inset-top) 才会生效（见 index.html）。
         iframe 预览：env 常为 0，用 max(..., 3.5rem) 对齐约 iPhone 14 Pro 状态栏+岛区域。
       */}
       <div
-        className="flex min-h-0 flex-1 flex-col bg-surface"
+        className="flex min-h-0 flex-1 flex-col bg-transparent"
         style={{
           paddingTop: embeddedPreview
             ? 'max(env(safe-area-inset-top, 0px), 3.5rem)'
@@ -82,7 +82,7 @@ export default function MobileLayout() {
       {!hideTab ? (
         <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-3 pb-[max(10px,env(safe-area-inset-bottom,0px))] pt-1">
           <nav
-            className="m-mobile-tab-bar pointer-events-auto flex h-[3.35rem] w-full max-w-[min(100%,440px)] items-stretch gap-0.5 rounded-[1.35rem] border border-outline-variant/25 bg-surface/92 px-1 shadow-[0_12px_48px_-12px_rgba(15,35,52,0.28),0_4px_16px_-4px_rgba(0,71,144,0.08)] backdrop-blur-xl dark:shadow-[0_12px_48px_-12px_rgba(0,0,0,0.45),0_4px_16px_-4px_rgba(0,71,144,0.06)]"
+            className="m-mobile-tab-bar m-service-dock pointer-events-auto flex h-[3.65rem] w-full max-w-[min(100%,440px)] items-stretch gap-0.5 rounded-[1.45rem] px-1"
             role="tablist"
             aria-label="主导航"
           >
@@ -97,8 +97,8 @@ export default function MobileLayout() {
                   aria-selected={active}
                   className={`m-mobile-tab m-portal-tap-clear relative flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-[1rem] py-1 transition-[color,background-color,transform] duration-200 active:scale-[0.97] ${
                     active
-                      ? 'bg-primary/12 text-primary dark:bg-primary/18'
-                      : 'text-on-surface-variant hover:bg-surface-container-high/80'
+                      ? 'bg-primary text-white ring-1 ring-primary/25 shadow-sm'
+                      : 'text-on-surface-variant hover:bg-secondary/10'
                   }`}
                   onClick={() => navigate(tab.key)}
                 >

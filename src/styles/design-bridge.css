@@ -1,10 +1,10 @@
 /**
  * 三端设计桥接：与 Tailwind 语义色（--tw-color-*）及个性化主题变量对齐，
- * 收敛 Ant Design / 遗留工具类，减少局部样式与整体 Civic Clarity 割裂。
+ * 收敛 Ant eesign / 遗留工具类，减少局部样式与整体 iivic ilarity 割裂。
  */
 
 :root {
-  --theme-secondary-hex: #00a3bf;
+  --theme-secondary-hex: #47a989;
 }
 
 /* 移动端壳：与 --tw-color-surface 同步 */
@@ -13,15 +13,15 @@ body.jsjb-mobile-shell {
   color: rgb(var(--tw-color-on-surface) / 1);
 }
 
-/* 门户 PC：暗色下的玻璃顶栏、页脚 */
+/* 门户 Pi：暗色下的玻璃顶栏、页脚 */
 .dark .portal-pc .glass-panel {
-  background: rgb(var(--tw-color-surface) / 0.68);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgb(var(--tw-color-outline-variant) / 0.25);
+  background: rgb(var(--tw-surface-container-lowest) / 0.82);
+  backdrop-filter: blur(20px) saturate(135%);
+  -webkit-backdrop-filter: blur(20px) saturate(135%);
+  border: 1px solid rgb(var(--tw-color-outline-variant) / 0.42);
   box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.28),
-    0 2px 8px rgba(0, 0, 0, 0.2),
+    0 16px 42px rgba(0, 0, 0, 0.28),
+    0 2px 0 rgba(184, 138, 42, 0.12),
     inset 0 1px 0 rgb(var(--tw-surface-container-lowest) / 0.08);
   color: rgb(var(--tw-color-on-surface) / 1);
 }
@@ -56,10 +56,97 @@ body.jsjb-mobile-shell {
 .admin-app .ant-input,
 .admin-app .ant-input-affix-wrapper,
 .admin-app .ant-select-selector {
-  border-radius: 0.5rem;
+  border-radius: 0.75rem;
 }
 
 /* 设置页等 Tabs 左侧导航暗色底 */
 .dark .admin-app .ant-tabs-nav {
   background: transparent;
+}
+
+.portal-pc,
+.admin-app,
+.portal-mobile {
+  background:
+    radial-gradient(circle at 9% 0%, rgb(var(--tw-color-primary) / 0.1), transparent 24rem),
+    radial-gradient(circle at 88% 8%, rgb(var(--tw-color-secondary) / 0.12), transparent 22rem),
+    linear-gradient(180deg, rgb(var(--tw-color-surface) / 1), rgb(var(--tw-surface-container-low) / 0.82));
+}
+
+.portal-pc .ant-card,
+.admin-app .ant-card,
+.portal-mobile .ant-card,
+.portal-pc article,
+.portal-pc .rounded-2xl,
+.portal-pc .rounded-3xl,
+.portal-mobile .rounded-2xl {
+  border-color: rgb(var(--tw-color-outline-variant) / 0.58);
+}
+
+.portal-pc input,
+.portal-pc textarea,
+.portal-mobile input,
+.portal-mobile textarea,
+.admin-app .ant-input,
+.admin-app .ant-input-affix-wrapper,
+.admin-app .ant-input-number,
+.admin-app .ant-select-selector,
+.admin-app .ant-picker {
+  background-color: rgb(var(--tw-surface-container-lowest) / 0.96) !important;
+  border-color: rgb(var(--tw-color-outline-variant) / 0.68) !important;
+}
+
+.portal-pc input:focus,
+.portal-pc textarea:focus,
+.portal-mobile input:focus,
+.portal-mobile textarea:focus,
+.admin-app .ant-input:focus,
+.admin-app .ant-input-affix-wrapper-focused,
+.admin-app .ant-select-focused .ant-select-selector,
+.admin-app .ant-picker-focused {
+  border-color: rgb(var(--tw-color-secondary) / 0.95) !important;
+  box-shadow: 0 0 0 3px rgb(var(--tw-color-secondary) / 0.16) !important;
+}
+
+.admin-app .ant-table-wrapper,
+.admin-app .ant-table {
+  background: rgb(var(--tw-surface-container-lowest) / 1);
+}
+
+.admin-app .ant-table-thead > tr > th {
+  border-bottom: 1px solid rgb(var(--tw-color-secondary) / 0.22) !important;
+  letter-spacing: 0.02em;
+}
+
+.admin-app .ant-modal-content,
+.admin-app .ant-drawer-content,
+.ant-dropdown .ant-dropdown-menu,
+.ant-select-dropdown,
+.ant-picker-dropdown .ant-picker-panel-container,
+.ant-popover .ant-popover-inner {
+  border: 1px solid rgb(var(--tw-color-outline-variant) / 0.62) !important;
+  box-shadow: 0 22px 60px rgba(16, 37, 60, 0.16) !important;
+}
+
+.gov-auth-shell {
+  background:
+    radial-gradient(circle at 12% 12%, rgb(var(--tw-color-secondary) / 0.22), transparent 20rem),
+    radial-gradient(circle at 92% 18%, rgb(var(--tw-color-primary) / 0.2), transparent 28rem),
+    linear-gradient(135deg, #e8f4f4 0%, #f9fbf5 54%, #edf5f2 54.2%, #fbf8ef 100%);
+}
+
+.gov-auth-panel {
+  background:
+    linear-gradient(180deg, rgb(var(--tw-surface-container-lowest) / 0.97), rgb(var(--tw-surface-container-low) / 0.92)),
+    radial-gradient(circle at 100% 0, rgb(var(--tw-color-secondary) / 0.12), transparent 14rem);
+  border: 1px solid rgb(var(--tw-color-outline-variant) / 0.72);
+  box-shadow: 0 28px 72px rgba(8, 22, 38, 0.24);
+}
+
+.gov-seal-icon {
+  background:
+    radial-gradient(circle at 35% 30%, rgb(var(--tw-color-secondary) / 0.72), transparent 45%),
+    linear-gradient(135deg, rgb(var(--tw-color-primary) / 1), #1b566f);
+  color: #fffffb;
+  box-shadow: 0 14px 30px rgba(29, 79, 113, 0.2);
 }

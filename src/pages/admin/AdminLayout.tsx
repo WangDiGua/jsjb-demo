@@ -1,55 +1,26 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import type { MenuProps } from 'antd';
-import { Badge, Dropdown, Menu, Popover, message } from 'antd';
+import { Badge, Dropdown, Popover, message } from 'antd';
+import PageOutletTransition from '@/components/shell/PageOutletTransition';
+import ScrollToTop from '@/components/shell/ScrollToTop';
 import {
-  appealService,
-  notificationService,
   ROLE_LABELS,
+  appealService,
   canAccessAdminRoute,
   canUseLeaderWorkbench,
+  notificationService,
   type InboxItem,
 } from '@/mock';
 import { useAppStore } from '@/store';
 import { usePreferencesStore } from '@/store/preferencesStore';
-import ScrollToTop from '@/components/shell/ScrollToTop';
-import PageOutletTransition from '@/components/shell/PageOutletTransition';
 
 type NavDef = { key: string; icon: string; label: string; end?: boolean; badge?: number };
-
 type AdminNavGroupDef = { id: string; label: string; icon: string; items: NavDef[] };
 
 function navActive(pathname: string, key: string, end?: boolean) {
   if (end) return pathname === key;
   return pathname === key || pathname.startsWith(`${key}/`);
-}
-
-function buildMenuItems(navGroups: AdminNavGroupDef[]): MenuProps['items'] {
-  return navGroups.map((g) => ({
-    key: g.id,
-    label: g.label,
-    icon: (
-      <span className="material-symbols-outlined text-[18px] leading-none text-current" aria-hidden>
-        {g.icon}
-      </span>
-    ),
-    children: g.items.map((i) => ({
-      key: i.key,
-      label: (
-        <span className="flex min-w-0 items-center gap-2">
-          <span className="material-symbols-outlined shrink-0 text-[18px] leading-none text-on-surface-variant" aria-hidden>
-            {i.icon}
-          </span>
-          <span className="min-w-0 flex-1">{i.label}</span>
-          {i.badge != null && i.badge > 0 ? (
-            <span className="inline-flex h-5 shrink-0 select-none items-center justify-center self-center rounded-md bg-primary/90 px-1.5 text-[10px] font-semibold tabular-nums leading-none text-white whitespace-nowrap">
-              {i.badge > 99 ? '99+' : i.badge}
-            </span>
-          ) : null}
-        </span>
-      ),
-    })),
-  }));
 }
 
 export default function AdminLayout() {
@@ -93,14 +64,10 @@ export default function AdminLayout() {
     const allow = (path: string) => (role ? canAccessAdminRoute(role, path) : false);
 
     const handlingItems: NavDef[] = [
-      { key: '/admin/dashboard', icon: 'dashboard', label: '数据概览', end: true },
-      { key: '/admin/appeals', icon: 'gavel', label: '诉求管理', badge: pendingCount },
+      { key: '/admin/dashboard', icon: 'dashboard', label: '综合看板', end: true },
+      { key: '/admin/appeals', icon: 'gavel', label: '诉求受理', badge: pendingCount },
     ];
-    if (
-      currentUser &&
-      canUseLeaderWorkbench(currentUser.role) &&
-      allow('/admin/leader-desk')
-    ) {
+    if (currentUser && canUseLeaderWorkbench(currentUser.role) && allow('/admin/leader-desk')) {
       handlingItems.push({
         key: '/admin/leader-desk',
         icon: 'assignment_ind',
@@ -110,10 +77,10 @@ export default function AdminLayout() {
     }
 
     const raw: AdminNavGroupDef[] = [
-      { id: 'handling', label: '诉求办理', icon: 'task_alt', items: handlingItems },
+      { id: 'handling', label: '受理办理', icon: 'task_alt', items: handlingItems },
       {
         id: 'reports',
-        label: '数据与报表',
+        label: '数据研判',
         icon: 'monitoring',
         items: [
           { key: '/admin/statistics', icon: 'bar_chart', label: '数据统计' },
@@ -122,7 +89,7 @@ export default function AdminLayout() {
       },
       {
         id: 'master',
-        label: '主数据',
+        label: '服务资源',
         icon: 'database',
         items: [
           { key: '/admin/departments', icon: 'domain', label: '部门管理' },
@@ -132,7 +99,7 @@ export default function AdminLayout() {
       },
       {
         id: 'flow',
-        label: '流程与权限',
+        label: '流程权限',
         icon: 'account_tree',
         items: [
           { key: '/admin/forms', icon: 'edit_note', label: '填报页面' },
@@ -143,7 +110,7 @@ export default function AdminLayout() {
       },
       {
         id: 'content',
-        label: '内容与智能化',
+        label: '内容智能',
         icon: 'auto_awesome',
         items: [
           { key: '/admin/notices-admin', icon: 'campaign', label: '公告管理' },
@@ -165,31 +132,19 @@ export default function AdminLayout() {
     ];
 
     if (!role) return [];
-
     return raw
-      .map((g) => ({
-        ...g,
-        items: g.items.filter((i) => allow(i.key)),
-      }))
+      .map((g) => ({ ...g, items: g.items.filter((i) => allow(i.key)) }))
       .filter((g) => g.items.length > 0);
   }, [pendingCount, leaderDeskBadge, currentUser]);
 
-  const menuItems = useMemo(() => buildMenuItems(navGroups), [navGroups]);
-
-  const selectedKey = useMemo(() => {
+  const selectedNav = (() => {
     for (const g of navGroups) {
       for (const i of g.items) {
-        if (navActive(pathname, i.key, i.end)) return i.key;
+        if (navActive(pathname, i.key, i.end)) return { group: g, item: i };
       }
     }
-    return pathname;
-  }, [pathname, navGroups]);
-
-  const onMenuClick: MenuProps['onClick'] = ({ key }) => {
-    if (typeof key === 'string' && key.startsWith('/')) {
-      navigate(key);
-    }
-  };
+    return null;
+  })();
 
   const userMenu: MenuProps = {
     items: [
@@ -237,28 +192,24 @@ export default function AdminLayout() {
 
   const notifPanel = (
     <div
-      className="w-[min(22rem,calc(100vw-1.25rem))] overflow-hidden rounded-xl border border-outline-variant/[0.18] bg-surface shadow-[0_12px_40px_-12px_rgba(15,23,42,0.35)] dark:border-outline-variant/25 dark:bg-surface-container-lowest dark:shadow-[0_12px_40px_-12px_rgba(0,0,0,0.55)]"
+      className="w-[min(22rem,calc(100vw-1.25rem))] overflow-hidden rounded-2xl border border-outline-variant/[0.18] bg-surface shadow-[0_12px_40px_-12px_rgba(15,23,42,0.35)]"
       onClick={(e) => e.stopPropagation()}
     >
-      <div className="border-b border-outline-variant/15 px-3.5 py-2.5 text-sm font-bold text-on-surface dark:border-outline-variant/20">
-        消息中心
-      </div>
+      <div className="border-b border-outline-variant/15 px-4 py-3 text-sm font-bold text-on-surface">消息中心</div>
       <div className="max-h-80 overflow-y-auto">
         {inbox.length === 0 ? (
-          <p className="px-3.5 py-8 text-center text-sm text-on-surface-variant">暂无消息</p>
+          <p className="px-4 py-8 text-center text-sm text-on-surface-variant">暂无消息</p>
         ) : (
           inbox.slice(0, 16).map((item) => (
             <button
               key={item.id}
               type="button"
-              className="flex w-full flex-col items-stretch gap-0.5 border-b border-outline-variant/10 px-3.5 py-2.5 text-left text-sm transition-colors hover:bg-surface-container-high/50 dark:border-outline-variant/10 dark:hover:bg-surface-container/40"
+              className="flex w-full flex-col items-stretch gap-0.5 border-b border-outline-variant/10 px-4 py-3 text-left text-sm transition-colors hover:bg-surface-container-low"
               style={{ opacity: item.read ? 0.62 : 1 }}
               onClick={() => void openInboxItem(item)}
             >
               <span className="font-medium text-on-surface">
-                {!item.read ? (
-                  <span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-primary align-middle dark:bg-primary/90" />
-                ) : null}
+                {!item.read ? <span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-primary align-middle" /> : null}
                 {item.title}
               </span>
               <span className="text-xs tabular-nums text-on-surface-variant">{item.createTime}</span>
@@ -269,7 +220,7 @@ export default function AdminLayout() {
       {inbox.length > 0 ? (
         <button
           type="button"
-          className="w-full border-t border-outline-variant/15 bg-surface-container-lowest/40 px-3 py-2.5 text-center text-xs font-semibold text-primary transition-colors hover:bg-surface-container-high/35 dark:border-outline-variant/20 dark:bg-surface-container-lowest/25 dark:hover:bg-surface-container/30"
+          className="w-full border-t border-outline-variant/15 bg-surface-container-lowest/40 px-3 py-2.5 text-center text-xs font-semibold text-primary transition-colors hover:bg-surface-container-high/35"
           onClick={() =>
             void notificationService
               .markAllRead(currentUser!)
@@ -286,85 +237,145 @@ export default function AdminLayout() {
     </div>
   );
 
+  const navButton = (item: NavDef) => {
+    const active = navActive(pathname, item.key, item.end);
+    return (
+      <button
+        key={item.key}
+        type="button"
+        className={`admin-nav-item flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-bold ${
+          active ? 'admin-nav-item-active' : 'text-on-surface-variant'
+        }`}
+        onClick={() => navigate(item.key)}
+      >
+        <span className="material-symbols-outlined text-[20px] leading-none" aria-hidden>
+          {item.icon}
+        </span>
+        <span className="min-w-0 flex-1 truncate">{item.label}</span>
+        {item.badge != null && item.badge > 0 ? (
+          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-black text-white">
+            {item.badge > 99 ? '99+' : item.badge}
+          </span>
+        ) : null}
+      </button>
+    );
+  };
+
   return (
-    <div className="admin-app min-h-screen bg-surface font-body text-on-surface">
+    <div className="admin-app admin-workbench-shell min-h-screen font-body text-on-surface">
       <ScrollToTop />
-
-      <header className="sticky top-0 z-50 border-b border-outline-variant/[0.16] bg-surface/95 shadow-[0_1px_0_rgb(15_23_42/0.04)] backdrop-blur-md dark:border-outline-variant/20 dark:shadow-[0_1px_0_rgb(0_0_0/0.2)]">
-        <div className="mx-auto flex max-w-[var(--layout-max,1600px)] items-center gap-2 px-3 py-1.5 md:gap-3 md:px-4 md:py-2">
-          <div className="flex min-w-0 shrink-0 items-center gap-2 md:gap-2.5">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-white shadow-sm shadow-primary/20 md:h-10 md:w-10 md:rounded-xl">
-              <span className="material-symbols-outlined text-[18px] leading-none md:text-[20px]" style={{ fontVariationSettings: "'FILL' 0, 'wght' 500" }}>
-                admin_panel_settings
-              </span>
+      <div className="flex min-h-screen">
+        <aside className="admin-side-nav fixed inset-y-0 left-0 z-40 hidden w-72 flex-col px-4 py-5 lg:flex">
+          <button type="button" className="mb-6 flex items-center gap-3 rounded-[1.5rem] p-2 text-left" onClick={() => navigate('/admin/dashboard')}>
+            <div className="gov-seal-icon flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl">
+              <span className="material-symbols-outlined">admin_panel_settings</span>
             </div>
-            <div className="min-w-0 leading-tight">
-              <h1 className="truncate font-headline text-sm font-bold text-primary md:text-[15px]">接诉即办</h1>
-              <p className="hidden text-[11px] text-on-surface-variant/80 sm:block">管理终端 · 顶部导航</p>
+            <div className="min-w-0">
+              <h1 className="truncate font-headline text-base font-black text-primary">接诉即办</h1>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-on-surface-variant">Workbench Center</p>
+            </div>
+          </button>
+
+          <div className="admin-sidebar-scroll min-h-0 flex-1 overflow-y-auto pr-1">
+            <div className="space-y-5">
+              {navGroups.map((group) => (
+                <section key={group.id}>
+                  <div className="mb-2 flex items-center gap-2 px-2 text-[11px] font-black uppercase tracking-[0.12em] text-on-surface-variant/78">
+                    <span className="material-symbols-outlined text-[16px]">{group.icon}</span>
+                    {group.label}
+                  </div>
+                  <div className="space-y-1">{group.items.map(navButton)}</div>
+                </section>
+              ))}
             </div>
           </div>
 
-          <div className="min-w-0 flex-1 overflow-x-auto [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <Menu
-              mode="horizontal"
-              items={menuItems}
-              selectedKeys={[selectedKey]}
-              onClick={onMenuClick}
-              className="admin-top-nav-menu min-w-max flex-nowrap border-0 bg-transparent"
-            />
+          <div className="mt-5 rounded-[1.5rem] border border-outline-variant/35 bg-surface-container-lowest/70 p-3">
+            <p className="text-xs font-bold text-on-surface">{currentUser?.nickname ?? '未登录'}</p>
+            <p className="mt-1 text-[11px] text-on-surface-variant">{currentUser ? ROLE_LABELS[currentUser.role] : ''}</p>
           </div>
+        </aside>
 
-          <div className="ml-auto flex shrink-0 items-center gap-1 md:gap-1.5">
-            {currentUser ? (
-              <Popover
-                open={notifOpen}
-                onOpenChange={setNotifOpen}
-                trigger={['click']}
-                placement="bottomRight"
-                content={notifPanel}
-              >
-                <button
-                  type="button"
-                  className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-variant/[0.18] bg-surface-container-lowest/60 outline-none transition-colors hover:border-outline-variant/35 hover:bg-surface-container-high/40 focus-visible:ring-2 focus-visible:ring-primary/25 dark:border-outline-variant/20 dark:bg-surface-container-lowest/35 md:h-10 md:w-10"
-                  aria-label={msgUnread > 0 ? `站内消息，${msgUnread} 条未读` : '站内消息'}
-                >
-                  <Badge count={msgUnread} size="small" offset={[-2, 2]}>
-                    <span className="material-symbols-outlined text-[20px] text-on-surface-variant" aria-hidden>
-                      notifications
-                    </span>
-                  </Badge>
-                </button>
-              </Popover>
-            ) : null}
-            <Dropdown menu={userMenu} trigger={['click']} placement="bottomRight">
-              <button
-                type="button"
-                className="flex shrink-0 items-center gap-2 rounded-lg border border-outline-variant/[0.18] bg-surface-container-lowest/60 px-2 py-1.5 outline-none transition-colors hover:border-outline-variant/35 hover:bg-surface-container-high/40 focus-visible:ring-2 focus-visible:ring-primary/25 dark:border-outline-variant/20 dark:bg-surface-container-lowest/35 md:px-2.5 md:py-2"
-                aria-haspopup="menu"
-              >
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 font-headline text-xs font-bold text-primary md:h-9 md:w-9 dark:bg-primary/18">
-                  {currentUser?.nickname?.slice(0, 1) ?? '管'}
+        <div className="min-w-0 flex-1 lg:pl-72">
+          <header className="sticky top-0 z-30 px-4 pt-4 lg:px-6">
+            <div className="admin-command-card rounded-[1.6rem] px-4 py-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-black uppercase tracking-[0.16em] text-primary">
+                    {selectedNav?.group.label ?? '管理端'}
+                  </p>
+                  <h2 className="mt-0.5 truncate font-headline text-xl font-black text-on-surface">
+                    {selectedNav?.item.label ?? '综合工作台'}
+                  </h2>
                 </div>
-                <div className="hidden min-w-0 max-w-[10rem] text-left sm:block">
-                  <p className="truncate text-[13px] font-bold text-on-surface">{currentUser?.nickname ?? '未登录'}</p>
-                  <p className="truncate text-[11px] text-on-surface-variant">{currentUser ? ROLE_LABELS[currentUser.role] : ''}</p>
-                </div>
-                <span className="material-symbols-outlined hidden text-[18px] text-on-surface-variant/70 sm:block" aria-hidden>
-                  expand_more
-                </span>
-              </button>
-            </Dropdown>
-          </div>
-        </div>
-      </header>
 
-      <div>
-        <div className="p-6 md:p-8">
-          <div className="mx-auto max-w-[var(--layout-max,1600px)]">
-            <PageOutletTransition>
-              <Outlet />
-            </PageOutletTransition>
-          </div>
+                <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto lg:hidden">
+                  {navGroups.flatMap((g) => g.items).map((item) => (
+                    <button
+                      key={item.key}
+                      type="button"
+                      className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-bold ${
+                        navActive(pathname, item.key, item.end) ? 'bg-primary text-white' : 'bg-surface-container-low text-on-surface-variant'
+                      }`}
+                      onClick={() => navigate(item.key)}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="ml-auto flex shrink-0 items-center gap-2">
+                  {currentUser ? (
+                    <Popover
+                      open={notifOpen}
+                      onOpenChange={setNotifOpen}
+                      trigger={['click']}
+                      placement="bottomRight"
+                      content={notifPanel}
+                    >
+                      <button
+                        type="button"
+                        className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-outline-variant/[0.28] bg-surface-container-lowest/70 outline-none transition-colors hover:border-primary/35 hover:bg-surface-container-high/40 focus-visible:ring-2 focus-visible:ring-primary/25"
+                        aria-label={msgUnread > 0 ? `站内消息：${msgUnread} 条未读` : '站内消息'}
+                      >
+                        <Badge count={msgUnread} size="small" offset={[-2, 2]}>
+                          <span className="material-symbols-outlined text-[20px] text-on-surface-variant" aria-hidden>
+                            notifications
+                          </span>
+                        </Badge>
+                      </button>
+                    </Popover>
+                  ) : null}
+                  <Dropdown menu={userMenu} trigger={['click']} placement="bottomRight">
+                    <button
+                      type="button"
+                      className="flex shrink-0 items-center gap-2 rounded-2xl border border-outline-variant/[0.28] bg-surface-container-lowest/70 px-2 py-1.5 outline-none transition-colors hover:border-primary/35 hover:bg-surface-container-high/40 focus-visible:ring-2 focus-visible:ring-primary/25 md:px-2.5 md:py-2"
+                      aria-haspopup="menu"
+                    >
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 font-headline text-xs font-bold text-primary md:h-9 md:w-9">
+                        {currentUser?.nickname?.slice(0, 1) ?? '管'}
+                      </div>
+                      <div className="hidden min-w-0 max-w-[10rem] text-left sm:block">
+                        <p className="truncate text-[13px] font-bold text-on-surface">{currentUser?.nickname ?? '未登录'}</p>
+                        <p className="truncate text-[11px] text-on-surface-variant">{currentUser ? ROLE_LABELS[currentUser.role] : ''}</p>
+                      </div>
+                      <span className="material-symbols-outlined hidden text-[18px] text-on-surface-variant/70 sm:block" aria-hidden>
+                        expand_more
+                      </span>
+                    </button>
+                  </Dropdown>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          <main className="p-4 lg:p-6">
+            <div className="mx-auto max-w-[var(--layout-max,1600px)]">
+              <PageOutletTransition>
+                <Outlet />
+              </PageOutletTransition>
+            </div>
+          </main>
         </div>
       </div>
     </div>

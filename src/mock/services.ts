@@ -207,6 +207,8 @@ export const userService = {
   },
 
   async phoneLogin(_phone: string, _captcha: string) {
+    void _phone;
+    void _captcha;
     await mockLatency();
     return { success: true as const, data: mockUsers[0], token: 'mock_phone_token' };
   },
@@ -318,8 +320,6 @@ function filterAppealsForViewer(appeals: import('./types').Appeal[], viewer?: Us
   }
   return appeals;
 }
-
-const REPORTABLE_APPEAL_STATUSES: Appeal['status'][] = ['pending', 'accepted', 'processing', 'reply_draft'];
 
 /** 办理人发起「上报领导 / 申请校办督办」：不含待审答复、已答复，且与「待领导批示」链互斥由下游另行判断 */
 const HANDLER_ESCALATION_APPEAL_STATUSES: Appeal['status'][] = ['pending', 'accepted', 'processing'];
@@ -721,7 +721,12 @@ function buildWeeklyReportSnapshot(monday: Date): WeeklyReportSnapshot {
     .filter((x): x is NonNullable<typeof x> => x != null && x.score > 80)
     .sort((a, b) => b.score - a.score)
     .slice(0, 5);
-  const 真问深答 = scoredDeep.map(({ score: _s, ...rest }) => rest);
+  const 真问深答 = scoredDeep.map((item) => ({
+    appealId: item.appealId,
+    title: item.title,
+    excerpt: item.excerpt,
+    replyExcerpt: item.replyExcerpt,
+  }));
 
   const superviseIds = new Set<string>();
   for (const r of flows) {

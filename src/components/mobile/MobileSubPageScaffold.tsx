@@ -36,13 +36,13 @@ export default function MobileSubPageScaffold({
   };
 
   return (
-    <div className="min-h-full bg-surface font-body text-on-surface">
-      <header className="sticky top-0 z-40 border-b border-outline-variant/20 bg-surface/92 backdrop-blur-xl m-portal-glass-header dark:border-outline-variant/25">
+    <div className="m-service-hall-bg min-h-full bg-surface font-body text-on-surface">
+      <header className="sticky top-0 z-40 border-b border-outline-variant/35 bg-surface-container-lowest/90 backdrop-blur-xl m-portal-glass-header dark:border-outline-variant/30">
         <div className="flex min-h-[3.5rem] max-w-full items-center gap-2 pb-1.5 pl-[max(0.5rem,env(safe-area-inset-left,0px))] pr-[max(0.75rem,env(safe-area-inset-right,0px))] pt-0.5">
           {showBack ? (
             <button
               type="button"
-              className="m-portal-tap-clear flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-on-surface transition-colors active:bg-surface-container-high"
+              className="m-portal-tap-clear flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-primary transition-colors active:bg-secondary/15"
               aria-label="返回"
               onClick={handleBack}
             >
@@ -51,7 +51,7 @@ export default function MobileSubPageScaffold({
           ) : (
             <span className="w-1 shrink-0" aria-hidden />
           )}
-          <h1 className="min-w-0 flex-1 truncate text-center font-headline text-base font-bold text-on-surface">
+          <h1 className="min-w-0 flex-1 truncate text-center font-headline text-base font-bold tracking-tight text-on-surface">
             {title}
           </h1>
           <div className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-end">{right ?? <span className="w-[44px]" aria-hidden />}</div>

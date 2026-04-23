@@ -633,7 +633,29 @@ export default function CreateAppealPage() {
   );
 
   const formInner = (
-    <div className="grid w-full grid-cols-1 items-start gap-8 md:grid-cols-[minmax(0,1fr)_minmax(16rem,24rem)] md:gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(17rem,28rem)] lg:gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,30rem)] xl:gap-10">
+    <div className="grid w-full grid-cols-1 items-start gap-6 md:grid-cols-[minmax(0,1fr)_minmax(16rem,24rem)] lg:grid-cols-[16rem_minmax(0,1fr)_minmax(17rem,26rem)] xl:grid-cols-[18rem_minmax(0,1fr)_minmax(18rem,28rem)]">
+      <aside className="hall-panel hall-guide-line sticky top-32 hidden rounded-[1.75rem] p-5 lg:block">
+        <p className="hall-section-label text-xs font-black">COUNTER FLOW</p>
+        <h2 className="mt-2 font-headline text-xl font-black text-on-surface">办理步骤</h2>
+        <div className="mt-5 space-y-5">
+          {[
+            ['01', '填写事项', '说明问题、地点和期望处理结果。'],
+            ['02', '匹配柜台', 'AI 可辅助推荐部门与类型。'],
+            ['03', '安全校验', '提交前进行敏感词与表单校验。'],
+            ['04', '进入台账', '提交后跳转到我的诉求继续追踪。'],
+          ].map(([num, title, desc]) => (
+            <div key={num} className="relative flex gap-3 pl-1">
+              <span className="z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-primary text-xs font-black text-white">
+                {num}
+              </span>
+              <span>
+                <span className="block text-sm font-black text-on-surface">{title}</span>
+                <span className="mt-1 block text-xs leading-relaxed text-on-surface-variant">{desc}</span>
+              </span>
+            </div>
+          ))}
+        </div>
+      </aside>
       <div className="min-w-0 space-y-4 md:space-y-5">
         {okMsg ? <p className="text-sm font-semibold text-success">{okMsg}</p> : null}
 
@@ -641,12 +663,12 @@ export default function CreateAppealPage() {
 
       <form
         onSubmit={submit}
-        className={`space-y-5 rounded-lg border border-outline-variant/20 bg-surface-container-lowest shadow-sm ${isMobile ? 'p-4 pb-6' : 'space-y-6 p-6 lg:p-8'}`}
+        className={`hall-counter-card space-y-5 rounded-[1.75rem] ${isMobile ? 'p-4 pb-6' : 'space-y-6 p-6 pt-8 lg:p-8 lg:pt-10'}`}
       >
         <div>
           <label className="mb-2 block text-sm font-bold text-on-surface">标题</label>
           <input
-            className="w-full rounded-lg border border-outline-variant/40 bg-surface px-4 py-3 text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20"
+            className="w-full rounded-2xl border border-outline-variant/40 bg-surface px-4 py-3 text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20"
             maxLength={100}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -689,7 +711,7 @@ export default function CreateAppealPage() {
               : '敏感词筛查：仅在您点击「提交诉求」时检测（本地词库优先，必要时再请求大模型复审）；若命中敏感词请修改后再次提交。'}
           </p>
           <textarea
-            className="min-h-[180px] w-full rounded-lg border border-outline-variant/40 bg-surface px-4 py-3 text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 lg:min-h-[200px]"
+            className="min-h-[180px] w-full rounded-2xl border border-outline-variant/40 bg-surface px-4 py-3 text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 lg:min-h-[220px]"
             maxLength={2000}
             value={content}
             onChange={(e) => setContent(e.target.value)}
@@ -789,14 +811,14 @@ export default function CreateAppealPage() {
             variant="primary"
             size="lg"
             disabled={loading || sensLoad}
-            className={`shadow-lg shadow-primary/25 ${isMobile ? 'w-full py-3.5 text-base' : 'px-10'}`}
+            className={`shadow-lg shadow-[0_12px_28px_rgba(16,37,60,0.18)] ${isMobile ? 'w-full py-3.5 text-base' : 'px-10'}`}
           >
             {loading ? '提交中…' : sensLoad ? '敏感词检测中…' : '提交诉求'}
           </PortalButton>
         </div>
       </form>
 
-      <div className={`rounded-lg border border-outline-variant/15 bg-surface/80 ${isMobile ? 'p-4' : 'p-6'}`}>
+      <div className={`rounded-[1.5rem] border border-outline-variant/25 bg-surface-container-lowest/80 ${isMobile ? 'p-4' : 'p-6'}`}>
         <h3 className="mb-3 font-headline text-sm font-bold text-on-surface sm:text-base">提交须知</h3>
         <ul className="list-inside list-disc space-y-2 text-sm text-on-surface-variant">
           <li>可先写正文，系统会尝试推荐部门与类型</li>
@@ -807,7 +829,7 @@ export default function CreateAppealPage() {
       </div>
 
       <aside
-        className="min-w-0 border-t border-outline-variant/20 pt-6 md:sticky md:top-24 md:mt-0 md:max-h-[calc(100vh-6rem)] md:overflow-y-auto md:border-0 md:border-l md:border-outline-variant/15 md:pl-5 md:pt-0 md:pr-0.5 xl:pl-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="hall-panel min-w-0 rounded-[1.75rem] p-5 md:sticky md:top-32 md:mt-0 md:max-h-[calc(100vh-8rem)] md:overflow-y-auto md:pr-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         aria-label="智能辅助与参考工具"
       >
         <div className="hidden md:block">
@@ -836,17 +858,24 @@ export default function CreateAppealPage() {
 
   return (
     <div className="w-full">
-      <header className="mb-8 border-b border-outline-variant/10 pb-6">
-        <div className="flex flex-wrap items-center gap-3 gap-y-2">
-          <PortalButton variant="link" size="md" className="shrink-0 p-0 text-sm font-bold" onClick={() => navigate(-1)}>
-            ← 返回
-          </PortalButton>
-          <h1 className="font-headline text-2xl font-bold tracking-tight text-on-surface lg:text-3xl">发起诉求</h1>
+      <header className="hall-panel mb-8 overflow-hidden rounded-[2rem] p-6 lg:p-8">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-end">
+          <div>
+            <PortalButton variant="link" size="md" className="mb-4 shrink-0 p-0 text-sm font-bold" onClick={() => navigate(-1)}>
+              ← 返回大厅
+            </PortalButton>
+            <p className="hall-section-label text-xs font-black">SERVICE COUNTER</p>
+            <h1 className="mt-2 font-headline text-3xl font-black tracking-tight text-on-surface lg:text-4xl">取号发起诉求</h1>
+            <p className="mt-3 max-w-3xl text-sm leading-relaxed text-on-surface-variant">
+              页面重排为左侧办理步骤、中间柜台表单、右侧智能辅助；提交、推荐、判重、翻译等功能保持原流程。
+            </p>
+          </div>
+          <div className="rounded-[1.5rem] bg-primary/10 p-4">
+            <p className="text-xs font-bold text-primary">当前柜台</p>
+            <p className="mt-1 font-headline text-xl font-black text-on-surface">诉求受理</p>
+            <p className="mt-2 text-xs leading-relaxed text-on-surface-variant">填写完成后将进入“我的诉求”台账。</p>
+          </div>
         </div>
-        <p className="mt-3 max-w-3xl text-sm text-on-surface-variant">
-          请完整填写标题与正文。中等宽度及以上屏幕为<strong className="font-semibold text-on-surface">左表单、右辅助栏</strong>
-          ；手机端辅助在表单下方。
-        </p>
       </header>
       {formInner}
     </div>

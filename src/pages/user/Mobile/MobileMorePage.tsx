@@ -50,7 +50,7 @@ export default function MobileMorePage() {
           <button
             key={s.to}
             type="button"
-            className="m-portal-tap-clear flex w-full min-h-[4.5rem] items-start gap-4 rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-4 text-left shadow-sm active:scale-[0.99] active:shadow-md"
+            className="m-service-card m-portal-tap-clear flex w-full min-h-[4.5rem] items-start gap-4 rounded-2xl p-4 text-left active:scale-[0.99] active:shadow-md"
             onClick={() => navigate(s.to)}
           >
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/12 text-primary">
@@ -69,7 +69,7 @@ export default function MobileMorePage() {
 
       <button
         type="button"
-        className="m-portal-tap-clear mt-4 flex w-full min-h-[3.25rem] items-center justify-between rounded-2xl border border-outline-variant/20 bg-surface-container-lowest px-4 py-3 text-left shadow-sm"
+        className="m-service-card m-portal-tap-clear mt-4 flex w-full min-h-[3.25rem] items-center justify-between rounded-2xl px-4 py-3 text-left"
         onClick={openPreferences}
       >
         <span className="flex items-center gap-2 font-headline text-sm font-bold text-on-surface">
@@ -79,7 +79,7 @@ export default function MobileMorePage() {
         <span className="material-symbols-outlined text-on-surface-variant">chevron_right</span>
       </button>
 
-      <section className="mt-6 rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-4 shadow-sm">
+      <section className="m-service-card mt-6 rounded-2xl p-4">
         <h2 className="font-headline text-sm font-bold text-on-surface-variant">账号</h2>
         <div className="mt-3 flex flex-col gap-2">
           {currentUser ? (

@@ -78,7 +78,7 @@ export default function PreferencesHost() {
                 type="button"
                 title={presetLabels[key]}
                 className={`flex h-11 w-11 items-center justify-center rounded-full border-2 shadow-sm transition ring-offset-2 ring-offset-surface ${
-                  themePreset === key ? 'border-outline-variant ring-2 ring-primary' : 'border-outline-variant'
+                  themePreset === key ? 'border-secondary ring-2 ring-secondary/45' : 'border-outline-variant'
                 }`}
                 style={{ backgroundColor: THEME_PRESET_HEX[key] }}
                 onClick={() => setThemePreset(key)}

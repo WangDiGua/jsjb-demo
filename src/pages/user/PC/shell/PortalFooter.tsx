@@ -21,12 +21,12 @@ export default function PortalFooter() {
   }, []);
 
   return (
-    <footer className="border-t border-outline-variant/30 bg-surface pb-10 pt-20 dark:border-slate-700/50">
+    <footer className="border-t border-outline-variant/45 bg-surface-container-lowest/72 pb-10 pt-20 dark:border-outline-variant/35">
       <div className="mx-auto w-full max-w-[var(--layout-max,1600px)] px-[var(--layout-px,2rem)]">
         <div className="mb-20 grid grid-cols-1 gap-12 md:grid-cols-4">
           <div className="md:col-span-1">
             <div className="mb-6 flex items-center gap-3">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-primary text-white">
+              <div className="gov-seal-icon flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg">
                 {logoUrl ? (
                   <img src={logoUrl} alt="" className="h-full w-full object-cover" />
                 ) : (
@@ -39,14 +39,14 @@ export default function PortalFooter() {
             <div className="flex gap-4">
               <button
                 type="button"
-                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-surface text-on-surface-variant transition-all hover:bg-primary hover:text-white"
+                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-surface-container-low text-on-surface-variant ring-1 ring-outline-variant/40 transition-all hover:bg-primary hover:text-white"
                 aria-label="分享"
               >
                 <span className="material-symbols-outlined text-sm">share</span>
               </button>
               <button
                 type="button"
-                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-surface text-on-surface-variant transition-all hover:bg-primary hover:text-white"
+                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-surface-container-low text-on-surface-variant ring-1 ring-outline-variant/40 transition-all hover:bg-primary hover:text-white"
                 aria-label="站点"
               >
                 <span className="material-symbols-outlined text-sm">language</span>

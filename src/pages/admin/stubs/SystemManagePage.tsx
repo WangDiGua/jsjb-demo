@@ -30,7 +30,7 @@ export default function SystemManagePage() {
         title="系统管理"
         subtitle="审计日志（配置类操作）与内置菜单说明；完整 RBAC 需对接真实身份系统"
       />
-      <Card loading={loading} className="rounded-xl border-outline-variant/20 shadow-[0_12px_32px_-4px_rgba(0,71,144,0.06)]">
+      <Card loading={loading} className="rounded-xl border-outline-variant/20 shadow-[0_18px_44px_rgba(16,37,60,0.09)]">
         <Tabs
           items={[
             {

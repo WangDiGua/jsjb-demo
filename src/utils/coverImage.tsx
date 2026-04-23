@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { useRef, useState } from 'react';
 
 /** 可用于 <img src> 的远程地址（排除 `#`、空串及非 http(s)） */

@@ -58,7 +58,7 @@ export default function RegisterPage() {
   };
 
   const card = (
-    <div className={`rounded-2xl border border-outline-variant/20 bg-surface-container-lowest shadow-lg ${isMobile ? 'p-5' : 'p-8'}`}>
+    <div className={`gov-auth-panel rounded-[2rem] ${isMobile ? 'p-5' : 'p-8'}`}>
       <div className={`text-center ${isMobile ? 'mb-6' : 'mb-8'}`}>
         <h1 className={`font-headline font-bold text-on-surface ${isMobile ? 'sr-only' : 'text-2xl'}`}>用户注册</h1>
         {!isMobile ? <p className="mt-1 text-sm text-on-surface-variant">接诉即办</p> : null}
@@ -154,8 +154,13 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="portal-skin min-h-screen bg-surface py-10 font-body">
-      <div className="mx-auto max-w-md px-6">
+    <div className="portal-skin gov-auth-shell min-h-screen py-10 font-body">
+      <div className="mx-auto grid min-h-[calc(100vh-5rem)] max-w-5xl items-center gap-6 px-6 lg:grid-cols-[minmax(0,1fr)_28rem]">
+        <aside className="hidden rounded-[2rem] bg-primary/10 p-8 lg:block">
+          <p className="hall-section-label text-xs font-black">NEW ACCOUNT</p>
+          <h2 className="mt-3 font-headline text-4xl font-black leading-tight text-on-surface">新用户登记台</h2>
+          <p className="mt-4 text-sm leading-relaxed text-on-surface-variant">注册后可立即进入门户，提交诉求并追踪办理进度。</p>
+        </aside>
         {card}
       </div>
     </div>

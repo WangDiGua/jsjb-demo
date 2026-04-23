@@ -10,7 +10,7 @@ import {
   type SelectHTMLAttributes,
 } from 'react';
 import { Select } from 'antd';
-import type { SelectProps } from 'antd/es/select';
+import type { RefSelectProps, SelectProps } from 'antd';
 import { cn } from './cn';
 
 export type PortalSelectProps = Omit<
@@ -46,7 +46,7 @@ function placeholderFromLabel(label: ReactNode): string | undefined {
   return undefined;
 }
 
-export const PortalSelect = forwardRef<any, PortalSelectProps>(function PortalSelect(
+export const PortalSelect = forwardRef<RefSelectProps, PortalSelectProps>(function PortalSelect(
   {
     className,
     children,
@@ -60,7 +60,6 @@ export const PortalSelect = forwardRef<any, PortalSelectProps>(function PortalSe
     autoFocus,
     title,
     required,
-    ..._
   },
   ref,
 ) {

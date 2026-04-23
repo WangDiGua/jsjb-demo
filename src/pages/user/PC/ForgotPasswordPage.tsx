@@ -28,7 +28,7 @@ export default function ForgotPasswordPage() {
   };
 
   const formCard = (
-    <div className="rounded-2xl border border-outline-variant/20 bg-surface-container-lowest p-6 shadow-lg sm:p-8">
+    <div className="gov-auth-panel rounded-[2rem] p-6 sm:p-8">
       <h1 className={`font-headline font-bold text-on-surface ${isMobile ? 'sr-only' : 'mt-0 text-xl'}`}>密码重置</h1>
       {!isMobile ? <p className="mt-2 text-sm text-on-surface-variant">验证通过后将引导您完成密码更新。</p> : null}
       {isMobile ? <p className="text-sm leading-relaxed text-on-surface-variant">验证通过后将引导您完成密码更新。</p> : null}
@@ -58,7 +58,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="portal-skin flex min-h-screen items-center justify-center bg-surface px-6 py-10 font-body">
+    <div className="portal-skin gov-auth-shell flex min-h-screen items-center justify-center px-6 py-10 font-body">
       <div className="w-full max-w-md">{formCard}</div>
     </div>
   );

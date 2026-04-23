@@ -53,22 +53,22 @@ export default function StatisticsPage() {
       <main>
         <Row gutter={[16, 16]} className="stats-row">
           <Col span={6}>
-            <Card className="stat-card rounded-xl border-outline-variant/20 shadow-[0_12px_32px_-4px_rgba(0,71,144,0.06)]">
+            <Card className="stat-card rounded-xl border-outline-variant/20 shadow-[0_18px_44px_rgba(16,37,60,0.09)]">
               <Statistic title="诉求总量" value={stats?.诉求总量 || 0} prefix={<FileTextOutlined />} loading={loading} />
             </Card>
           </Col>
           <Col span={6}>
-            <Card className="stat-card rounded-xl border-outline-variant/20 shadow-[0_12px_32px_-4px_rgba(0,71,144,0.06)]">
+            <Card className="stat-card rounded-xl border-outline-variant/20 shadow-[0_18px_44px_rgba(16,37,60,0.09)]">
               <Statistic title="已答复" value={stats?.已答复 || 0} prefix={<CheckCircleOutlined />} styles={{ content: { color: 'var(--success-color, #2a9d7a)' } }} loading={loading} />
             </Card>
           </Col>
           <Col span={6}>
-            <Card className="stat-card rounded-xl border-outline-variant/20 shadow-[0_12px_32px_-4px_rgba(0,71,144,0.06)]">
+            <Card className="stat-card rounded-xl border-outline-variant/20 shadow-[0_18px_44px_rgba(16,37,60,0.09)]">
               <Statistic title="平均响应时长" value={stats?.平均响应时长 || 0} suffix="小时" prefix={<ClockCircleOutlined />} loading={loading} />
             </Card>
           </Col>
           <Col span={6}>
-            <Card className="stat-card rounded-xl border-outline-variant/20 shadow-[0_12px_32px_-4px_rgba(0,71,144,0.06)]">
+            <Card className="stat-card rounded-xl border-outline-variant/20 shadow-[0_18px_44px_rgba(16,37,60,0.09)]">
               <Statistic title="满意度" value={stats?.满意度 || 0} suffix="分" prefix={<RiseOutlined />} styles={{ content: { color: 'var(--primary-color)' } }} loading={loading} />
             </Card>
           </Col>
@@ -76,7 +76,7 @@ export default function StatisticsPage() {
 
         <Row gutter={[16, 16]}>
           <Col span={12}>
-            <Card title="部门处理效率" className="table-card rounded-xl border-outline-variant/20 shadow-[0_12px_32px_-4px_rgba(0,71,144,0.06)]">
+            <Card title="部门处理效率" className="table-card rounded-xl border-outline-variant/20 shadow-[0_18px_44px_rgba(16,37,60,0.09)]">
               <Table
                 loading={loading}
                 dataSource={stats?.部门排名 || []}
@@ -91,7 +91,7 @@ export default function StatisticsPage() {
             </Card>
           </Col>
           <Col span={12}>
-            <Card title="热点词云" className="table-card rounded-xl border-outline-variant/20 shadow-[0_12px_32px_-4px_rgba(0,71,144,0.06)]">
+            <Card title="热点词云" className="table-card rounded-xl border-outline-variant/20 shadow-[0_18px_44px_rgba(16,37,60,0.09)]">
               <HotWordCloud items={stats?.热点词云 || []} />
               <p className="mt-3 text-center text-xs text-on-surface-variant">
                 词频明细见管理端统计与台账；字形大小表示相对热度。

@@ -1,26 +1,29 @@
 :root {
-  --jsjb-font-display: 'Fraunces', 'Times New Roman', serif;
-  --jsjb-font-body: 'IBM Plex Sans', system-ui, sans-serif;
-  --jsjb-ink: #0f2338;
-  --jsjb-accent: #0052cc;
-  --jsjb-accent-soft: #7ec8ff;
-  --jsjb-surface: #f8fafc;
-  --jsjb-bg-elevated: #eef2f6;
-  --jsjb-text: #0f2338;
-  --jsjb-text-muted: #5c6b7a;
-  --jsjb-shadow-card: 0 12px 40px rgba(15, 35, 52, 0.12);
-  --primary-color: #0052cc;
-  --success-color: #2a9d7a;
-  --warning-color: #e9a23b;
-  --error-color: #c94c4c;
-  --text-color: #0f2338;
-  --text-color-secondary: #5c6b7a;
-  --border-color: #c5d2df;
-  --bg-color: #eef2f6;
-  --card-bg: #ffffff;
-  --border-radius: 10px;
+  --jsjb-font-display: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', 'SimSun', serif;
+  --jsjb-font-body: 'Noto Sans CJK SC', 'Source Han Sans SC', 'Microsoft YaHei UI', 'PingFang SC', sans-serif;
+  --jsjb-ink: #193044;
+  --jsjb-accent: #286d99;
+  --jsjb-accent-soft: #daedf7;
+  --jsjb-gold: #d9a85a;
+  --jsjb-gold-soft: #f4e6c9;
+  --jsjb-surface: #fffffb;
+  --jsjb-bg-elevated: #f5f7f1;
+  --jsjb-paper: #fffffb;
+  --jsjb-text: #193044;
+  --jsjb-text-muted: #66737f;
+  --jsjb-shadow-card: 0 18px 44px rgba(29, 79, 113, 0.1);
+  --primary-color: #286d99;
+  --success-color: #47a989;
+  --warning-color: #d9a85a;
+  --error-color: #c55a54;
+  --text-color: #193044;
+  --text-color-secondary: #66737f;
+  --border-color: #cad8d5;
+  --bg-color: #f5f7f1;
+  --card-bg: #fffffb;
+  --border-radius: 18px;
   --shadow: var(--jsjb-shadow-card);
-  --shadow-hover: 0 16px 48px rgba(15, 35, 52, 0.14);
+  --shadow-hover: 0 22px 60px rgba(29, 79, 113, 0.14);
 }
 
 /* 文档根滚动条（Windows 下易为「经典」样式）：隐藏但保持可滚动 */
@@ -72,6 +75,10 @@ html::-webkit-scrollbar {
 body {
   font-family: var(--jsjb-font-body);
   line-height: 1.55;
+  background:
+    radial-gradient(circle at 12% 4%, rgba(40, 109, 153, 0.12), transparent 28rem),
+    radial-gradient(circle at 88% 12%, rgba(71, 169, 137, 0.14), transparent 24rem),
+    linear-gradient(135deg, #fbfcf6 0%, #eef6f4 48%, #f8f4ea 100%);
   /* 背景与正文字色由 preferences.css + 个性化变量统一控制 */
 }
 
@@ -94,7 +101,7 @@ a {
 }
 
 a:hover {
-  color: #4096ff;
+  color: #286d99;
 }
 
 .page-container {
@@ -122,6 +129,7 @@ a:hover {
   background: var(--card-bg);
   border-radius: var(--border-radius);
   padding: 24px;
+  border: 1px solid rgba(218, 205, 184, 0.7);
   box-shadow: var(--shadow);
   transition: box-shadow 0.3s;
 }
@@ -199,4 +207,44 @@ a:hover {
 
 .animate-in {
   animation: fadeIn 0.4s ease-out;
+}
+
+.gov-paper {
+  background:
+    linear-gradient(180deg, rgba(255, 252, 246, 0.96), rgba(249, 244, 235, 0.96)),
+    radial-gradient(circle at 100% 0, rgba(184, 138, 42, 0.09), transparent 18rem);
+  border: 1px solid rgba(218, 205, 184, 0.72);
+  box-shadow: 0 18px 44px rgba(16, 37, 60, 0.1);
+}
+
+.gov-title-rule {
+  position: relative;
+}
+
+.gov-title-rule::after {
+  content: '';
+  display: block;
+  width: 3.25rem;
+  height: 3px;
+  margin-top: 0.75rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--jsjb-accent), rgba(71, 169, 137, 0));
+}
+
+html.dark {
+  --jsjb-ink: #e6f0f2;
+  --jsjb-surface: #0d1f2a;
+  --jsjb-bg-elevated: #0a1720;
+  --jsjb-paper: #0d1f2a;
+  --jsjb-text: #e6f0f2;
+  --jsjb-text-muted: #a0b3b8;
+  --border-color: #3a4f56;
+  --card-bg: #0d1f2a;
+}
+
+html.dark body {
+  background:
+    radial-gradient(circle at 16% 8%, rgba(80, 180, 148, 0.12), transparent 24rem),
+    radial-gradient(circle at 90% 12%, rgba(72, 151, 198, 0.16), transparent 24rem),
+    linear-gradient(135deg, #0a1720 0%, #0d1f2a 55%, #143140 100%);
 }

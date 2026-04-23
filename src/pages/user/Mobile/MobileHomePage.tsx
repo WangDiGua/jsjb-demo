@@ -104,7 +104,7 @@ export default function MobileHomePage() {
 
   const noticesResolved = useMemo(
     () => notices.map((n) => resolveNoticeI18n(n, metadataDisplayLocale)),
-    [notices, metadataDisplayLocale, metaTick],
+    [notices, metadataDisplayLocale],
   );
 
   useEffect(() => {
@@ -129,8 +129,8 @@ export default function MobileHomePage() {
   };
 
   return (
-    <div className="min-h-full bg-surface font-body text-on-surface antialiased">
-      <header className="sticky top-0 z-40 border-b border-outline-variant/20 bg-surface/90 shadow-[0_1px_0_rgba(15,35,52,0.06)] backdrop-blur-xl m-portal-glass-header dark:border-outline-variant/25 dark:shadow-[0_1px_0_rgba(0,0,0,0.2)]">
+    <div className="m-service-hall-bg min-h-full bg-surface font-body text-on-surface antialiased">
+      <header className="sticky top-0 z-40 border-b border-outline-variant/35 bg-surface-container-lowest/90 backdrop-blur-xl m-portal-glass-header dark:border-outline-variant/30">
         <div className="flex min-h-[3.5rem] w-full max-w-full items-center justify-between pb-1.5 pl-[max(1rem,env(safe-area-inset-left,0px))] pr-[max(1rem,env(safe-area-inset-right,0px))] pt-0.5">
           <span className="font-headline text-[1.05rem] font-bold tracking-tight text-primary">
             接诉即办
@@ -232,7 +232,7 @@ export default function MobileHomePage() {
       </div>
 
       <section className="pb-2 pl-[max(1rem,env(safe-area-inset-left,0px))] pr-[max(1rem,env(safe-area-inset-right,0px))] pt-4">
-        <div className="m-portal-signature-gradient relative overflow-hidden rounded-2xl px-5 py-6 text-white shadow-[0_20px_48px_-16px_rgba(0,71,144,0.45)]">
+        <div className="m-portal-signature-gradient relative overflow-hidden rounded-[1.7rem] px-5 py-6 text-white shadow-[0_24px_54px_-18px_rgba(29,79,113,0.42)]">
           <div
             className="pointer-events-none absolute inset-0 opacity-[0.12]"
             style={{
@@ -268,6 +268,29 @@ export default function MobileHomePage() {
         </div>
       </section>
 
+      <section className="py-4 pl-[max(1rem,env(safe-area-inset-left,0px))] pr-[max(1rem,env(safe-area-inset-right,0px))]">
+        <div className="grid grid-cols-4 gap-2.5">
+          {[
+            ['add_circle', '取号', '/user/appeal/create'],
+            ['forum', '公示', '/user/appeal/list'],
+            ['support_agent', '咨询', '/user/ai-assistant'],
+            ['person', '台账', currentUser ? '/user/appeal/my' : '/user/login'],
+          ].map(([icon, label, to]) => (
+            <button
+              key={label}
+              type="button"
+              className="m-service-card m-portal-tap-clear flex min-h-[5.25rem] flex-col items-center justify-center gap-2 rounded-2xl p-2 text-center active:scale-[0.98]"
+              onClick={() => navigate(to)}
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <span className="material-symbols-outlined text-[22px] leading-none">{icon}</span>
+              </span>
+              <span className="text-xs font-black text-on-surface">{label}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+
       <section className="py-5 pl-[max(1rem,env(safe-area-inset-left,0px))] pr-[max(1rem,env(safe-area-inset-right,0px))]">
         <h2 className="mb-3 font-headline text-base font-bold text-on-surface">我的诉求概览</h2>
         {loading ? (
@@ -286,7 +309,7 @@ export default function MobileHomePage() {
           <div className="grid grid-cols-3 gap-2.5">
             <button
               type="button"
-              className="flex flex-col items-center rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-4 text-center shadow-sm transition-[transform,box-shadow] active:scale-[0.98] active:shadow-md"
+              className="m-service-card flex flex-col items-center rounded-2xl p-4 text-center transition-[transform,box-shadow] active:scale-[0.98] active:shadow-md"
               onClick={() => navigate(currentUser ? '/user/appeal/my' : '/user/login')}
             >
               <span className="font-headline text-2xl font-bold tabular-nums text-primary">{mySummary.pending}</span>
@@ -294,7 +317,7 @@ export default function MobileHomePage() {
             </button>
             <button
               type="button"
-              className="flex flex-col items-center rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-4 text-center shadow-sm transition-[transform,box-shadow] active:scale-[0.98] active:shadow-md"
+              className="m-service-card flex flex-col items-center rounded-2xl p-4 text-center transition-[transform,box-shadow] active:scale-[0.98] active:shadow-md"
               onClick={() => navigate(currentUser ? '/user/appeal/my' : '/user/login')}
             >
               <span className="font-headline text-2xl font-bold tabular-nums text-secondary">
@@ -304,7 +327,7 @@ export default function MobileHomePage() {
             </button>
             <button
               type="button"
-              className="flex flex-col items-center rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-4 text-center shadow-sm transition-[transform,box-shadow] active:scale-[0.98] active:shadow-md"
+              className="m-service-card flex flex-col items-center rounded-2xl p-4 text-center transition-[transform,box-shadow] active:scale-[0.98] active:shadow-md"
               onClick={() => navigate(currentUser ? '/user/appeal/my' : '/user/login')}
             >
               <span className="font-headline text-2xl font-bold tabular-nums text-on-surface-variant">

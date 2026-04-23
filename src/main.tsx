@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ConfigProvider, Skeleton } from 'antd';
@@ -36,7 +37,7 @@ function Bootstrap() {
     () => ({ ...appTheme, ...buildAntdTheme(themePreset, dark) }),
     [themePreset, dark],
   );
-  const skeletonBg = dark ? 'rgb(15, 23, 42)' : 'rgb(244, 245, 247)';
+  const skeletonBg = dark ? 'rgb(10, 23, 32)' : 'rgb(245, 247, 241)';
 
   useEffect(() => {
     let cancelled = false;

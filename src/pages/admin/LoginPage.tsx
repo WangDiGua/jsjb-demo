@@ -31,11 +31,11 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="admin-login-page flex min-h-screen flex-col bg-surface font-body text-on-surface md:flex-row">
-      <aside className="relative hidden flex-col justify-between border-b border-outline-variant bg-surface-container-low px-10 py-12 md:flex md:w-[42%] md:border-b-0 md:border-r lg:px-14">
+    <div className="admin-login-page gov-auth-shell flex min-h-screen flex-col font-body text-on-surface md:flex-row">
+      <aside className="relative hidden flex-col justify-between border-b border-outline-variant/45 bg-primary/12 px-10 py-12 text-on-surface md:flex md:w-[42%] md:border-b-0 md:border-r lg:px-14">
         <div>
           <h1 className="font-headline text-2xl font-black tracking-tight text-primary">接诉即办</h1>
-          <p className="mt-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant opacity-70">
+          <p className="mt-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
             管理终端
           </p>
           <p className="mt-10 max-w-sm text-lg font-semibold leading-snug text-on-surface">
@@ -46,14 +46,14 @@ export default function AdminLoginPage() {
           </p>
         </div>
         <div className="flex items-center gap-3 text-on-surface-variant">
-          <span className="material-symbols-outlined text-primary text-3xl">shield_person</span>
+          <span className="material-symbols-outlined text-secondary text-3xl">shield_person</span>
           <span className="text-xs font-medium">安全登录 · 权限按角色控制</span>
         </div>
       </aside>
 
       <div className="flex flex-1 items-center justify-center px-6 py-12">
         <Card
-          className="w-full max-w-md rounded-2xl border border-outline-variant/25 shadow-[0_12px_32px_-4px_rgba(0,71,144,0.08)]"
+          className="gov-auth-panel w-full max-w-md rounded-2xl"
           bordered={false}
         >
           <div className="mb-8 md:hidden">

@@ -85,7 +85,7 @@ export default function NoticeDetailPage() {
     return (
       <MobileSubPageScaffold title={notice.title} contentClassName="pt-3 pb-10">
         <h1 className="sr-only">{notice.title}</h1>
-        <article className="rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-5 shadow-sm">
+        <article className="hall-panel rounded-[2rem] p-5">
           <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-on-surface-variant">
             <span className="font-medium text-on-surface">{notice.publisher}</span>
             <span className="tabular-nums">{notice.createTime}</span>
@@ -101,12 +101,13 @@ export default function NoticeDetailPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl">
+    <div className="mx-auto w-full max-w-4xl">
       <PortalButton variant="link" size="md" className="mb-6 p-0 text-sm" onClick={() => navigate(-1)}>
         ← 返回
       </PortalButton>
-      <article className="rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-8 shadow-sm">
-        <h1 className="font-headline text-2xl font-bold text-on-surface">{notice.title}</h1>
+      <article className="hall-panel rounded-[2rem] p-8">
+        <p className="hall-section-label text-xs font-black">NOTICE DESK</p>
+        <h1 className="mt-2 font-headline text-3xl font-black text-on-surface">{notice.title}</h1>
         <div className="mt-4 flex flex-wrap gap-4 text-sm text-on-surface-variant">
           <span>{notice.publisher}</span>
           <span>{notice.createTime}</span>

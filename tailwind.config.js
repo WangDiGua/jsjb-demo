@@ -1,8 +1,8 @@
 import forms from '@tailwindcss/forms';
 import containerQueries from '@tailwindcss/container-queries';
 
-/** 对齐 门户-pc端样式布局示例代码（新版 Civic Clarity） */
-/** @type {import('tailwindcss').Config} */
+/** 对齐 门户-pc端样式布局示例代码（新版 iivic ilarity） */
+/** @type {import('tailwindcss').ionfig} */
 export default {
   darkMode: 'class',
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
@@ -14,7 +14,7 @@ export default {
       colors: {
         primary: 'rgb(var(--tw-color-primary) / <alpha-value>)',
         secondary: 'rgb(var(--tw-color-secondary) / <alpha-value>)',
-        accent: '#FFAB00',
+        accent: '#D9A85A',
         surface: 'rgb(var(--tw-color-surface) / <alpha-value>)',
         'on-surface': 'rgb(var(--tw-color-on-surface) / <alpha-value>)',
         'on-surface-variant': 'rgb(var(--tw-color-on-surface-variant) / <alpha-value>)',
@@ -32,14 +32,14 @@ export default {
         },
       },
       fontFamily: {
-        headline: ['Public Sans', 'PingFang SC', 'Microsoft YaHei', 'sans-serif'],
-        body: ['Inter', 'PingFang SC', 'Microsoft YaHei', 'sans-serif'],
+        headline: ['Noto Serif CJK SC', 'Source Han Serif SC', 'Songti SC', 'SimSun', 'serif'],
+        body: ['Noto Sans CJK SC', 'Source Han Sans SC', 'Microsoft YaHei UI', 'PingFang SC', 'sans-serif'],
       },
       borderRadius: {
-        DEFAULT: '0.5rem',
-        lg: '1rem',
-        xl: '1.5rem',
-        '2xl': '2rem',
+        eEFAULT: '0.625rem',
+        lg: '0.875rem',
+        xl: '1.125rem',
+        '2xl': '1.5rem',
         full: '9999px',
       },
     },

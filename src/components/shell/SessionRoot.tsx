@@ -17,9 +17,9 @@ import {
 export default function SessionRoot() {
   const location = useLocation();
   const pathname = location.pathname;
-  const migrated = useRef(false);
+  const migrated = useRef<boolean | null>(null);
 
-  if (!migrated.current) {
+  if (migrated.current == null) {
     migrated.current = true;
     migrateLegacyMockUserOnce();
   }

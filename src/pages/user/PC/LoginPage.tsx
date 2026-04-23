@@ -75,14 +75,31 @@ export default function LoginPage() {
 
   return (
     <div
-      className={`portal-skin min-h-screen bg-gradient-to-br from-on-surface via-primary/80 to-secondary/90 font-body ${
+      className={`portal-skin gov-auth-shell min-h-screen font-body ${
         isMobile ? 'py-6 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]' : 'py-10'
       }`}
     >
-      <div className="mx-auto flex min-h-[min(100dvh,100vh)] max-w-md items-center px-6">
-        <div className="w-full rounded-2xl border border-white/20 bg-surface-container-lowest/95 p-8 shadow-2xl backdrop-blur-md">
+      <div className="mx-auto grid min-h-[min(100dvh,100vh)] w-full max-w-5xl items-center gap-6 px-6 lg:grid-cols-[minmax(0,1fr)_26rem]">
+        <aside className="hidden rounded-[2rem] bg-primary/10 p-8 lg:block">
+          <p className="hall-section-label text-xs font-black">ENTRY KIOSK</p>
+          <h2 className="mt-3 font-headline text-4xl font-black leading-tight text-on-surface">服务大厅入口</h2>
+          <p className="mt-4 text-sm leading-relaxed text-on-surface-variant">
+            登录后可查看个人办件、接收消息提醒，并继续办理未完成事项。
+          </p>
+          <div className="mt-8 grid gap-3">
+            {['个人办件台账', '诉求进度提醒', '移动端同步访问'].map((item, idx) => (
+              <div key={item} className="flex items-center gap-3 rounded-2xl bg-surface-container-lowest/78 px-4 py-3">
+                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-xs font-black text-white">
+                  {idx + 1}
+                </span>
+                <span className="text-sm font-bold text-on-surface">{item}</span>
+              </div>
+            ))}
+          </div>
+        </aside>
+        <div className="gov-auth-panel w-full rounded-[2rem] p-8 backdrop-blur-md">
           <div className="mb-8 text-center">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-white shadow-lg">
+            <div className="gov-seal-icon mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl">
               <span className="material-symbols-outlined text-3xl">account_balance</span>
             </div>
             <h1 className="font-headline text-2xl font-extrabold text-primary">{loginWelcome}</h1>
@@ -99,7 +116,7 @@ export default function LoginPage() {
                 type="button"
                 variant="ghost"
                 className={`flex-1 rounded-lg py-2 text-sm font-bold transition-all ${
-                  mode === m ? 'bg-surface-container-lowest text-primary shadow-sm hover:bg-surface-container-lowest' : 'text-on-surface-variant'
+                  mode === m ? 'bg-secondary/15 text-primary shadow-sm ring-1 ring-secondary/25 hover:bg-secondary/15' : 'text-on-surface-variant'
                 }`}
                 onClick={() => {
                   setMode(m);
@@ -142,7 +159,7 @@ export default function LoginPage() {
                   忘记密码？
                 </Link>
               </label>
-              <PortalButton type="submit" variant="primary" fullWidth size="lg" disabled={loading} className="shadow-lg shadow-primary/30">
+              <PortalButton type="submit" variant="primary" fullWidth size="lg" disabled={loading}>
                 {loading ? '登录中…' : '登录'}
               </PortalButton>
               <p className="text-center text-[11px] leading-relaxed text-on-surface-variant/75">

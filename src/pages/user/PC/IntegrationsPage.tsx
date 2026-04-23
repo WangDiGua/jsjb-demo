@@ -17,10 +17,11 @@ export default function IntegrationsPage() {
   const body = (
     <>
       {!isMobile ? (
-        <>
-          <h1 className="font-headline text-3xl font-bold text-on-surface">系统对接</h1>
+        <header className="hall-panel rounded-[2rem] p-6">
+          <p className="hall-section-label text-xs font-black">CONNECTION MAP</p>
+          <h1 className="mt-2 font-headline text-3xl font-black text-on-surface">系统连通图</h1>
           <p className="mt-2 text-on-surface-variant">以下为常见对接能力说明，具体实施方案以校方信息化规划为准。</p>
-        </>
+        </header>
       ) : (
         <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
           以下为常见对接能力说明，具体实施方案以校方信息化规划为准。
@@ -28,7 +29,7 @@ export default function IntegrationsPage() {
       )}
 
       <div
-        className={`space-y-0 rounded-2xl border border-outline-variant/15 bg-surface-container-lowest shadow-sm ${isMobile ? 'mt-0' : 'mt-10'}`}
+        className={`hall-panel space-y-0 overflow-hidden rounded-[2rem] ${isMobile ? 'mt-0' : 'mt-6'}`}
       >
         {items.map((item, i) => (
           <div
@@ -57,7 +58,7 @@ export default function IntegrationsPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl">
+    <div className="mx-auto w-full max-w-4xl">
       <PortalButton variant="link" size="md" className="mb-6 p-0 text-sm" onClick={() => navigate(-1)}>
         ← 返回
       </PortalButton>

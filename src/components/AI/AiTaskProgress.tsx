@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 /** 请求进行中时约每 100ms 更新；结束时保留最后一次计时时长（便于展示「本次用时」）。 */
@@ -7,11 +8,12 @@ export function useRequestStopwatch(isActive: boolean): number {
   useEffect(() => {
     if (!isActive) return;
     const t0 = performance.now();
-    setElapsedMs(0);
+    const resetId = window.setTimeout(() => setElapsedMs(0), 0);
     const id = window.setInterval(() => {
       setElapsedMs(Math.round(performance.now() - t0));
     }, 100);
     return () => {
+      clearTimeout(resetId);
       clearInterval(id);
       setElapsedMs(Math.round(performance.now() - t0));
     };
@@ -129,7 +131,7 @@ function stepBadge(done: boolean, current: boolean, index: number) {
         done
           ? 'bg-success/20 text-success'
           : current
-            ? 'bg-primary text-white shadow-sm shadow-primary/15'
+            ? 'bg-primary text-white shadow-sm shadow-[0_12px_28px_rgba(16,37,60,0.18)] ring-2 ring-secondary/25'
             : 'bg-surface-container-high text-on-surface-variant'
       }`}
       aria-hidden
@@ -169,7 +171,7 @@ export function AiTaskProgress({
             <div
               className={`min-w-0 flex-1 rounded-lg px-2 py-1.5 ${
                 current
-                  ? 'bg-primary/[0.07] ring-1 ring-primary/20 dark:bg-primary/10'
+                  ? 'bg-primary/[0.07] ring-1 ring-secondary/25 dark:bg-primary/10'
                   : done
                     ? 'bg-success/[0.06]'
                     : ''
@@ -197,7 +199,7 @@ export function AiTaskProgress({
             <div
               className={`flex min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 ${
                 current
-                  ? 'bg-primary/12 ring-1 ring-primary/25'
+                  ? 'bg-primary/12 ring-1 ring-secondary/25'
                   : done
                     ? 'bg-success/8 text-on-surface'
                     : 'text-on-surface-variant/80'
@@ -225,7 +227,7 @@ export function AiTaskProgress({
             <div
               className={`flex min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 sm:inline-flex sm:max-w-none ${
                 current
-                  ? 'bg-primary/12 ring-1 ring-primary/25'
+                  ? 'bg-primary/12 ring-1 ring-secondary/25'
                   : done
                     ? 'bg-success/8 text-on-surface'
                     : 'text-on-surface-variant/80'
@@ -247,7 +249,7 @@ export function AiTaskProgress({
 
   return (
     <div
-      className={`rounded-xl border border-outline-variant/20 bg-surface-container-lowest/80 px-3 py-3 sm:px-4 ${className}`}
+      className={`rounded-xl border border-outline-variant/45 bg-surface-container-lowest/88 px-3 py-3 shadow-sm sm:px-4 ${className}`}
       role="status"
       aria-live="polite"
       aria-atomic="true"

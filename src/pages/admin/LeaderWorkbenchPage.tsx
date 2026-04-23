@@ -187,7 +187,7 @@ export default function LeaderWorkbenchPage() {
       />
 
       <main>
-        <Card className="rounded-xl border-outline-variant/20 shadow-[0_12px_32px_-4px_rgba(0,71,144,0.06)]">
+        <Card className="rounded-xl border-outline-variant/20 shadow-[0_18px_44px_rgba(16,37,60,0.09)]">
           <Tabs
             activeKey={tab}
             items={tabItems}

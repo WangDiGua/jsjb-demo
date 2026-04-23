@@ -53,6 +53,7 @@ function parseAiChatText(text: string): { answer: string; sources: string[] } {
 
 /** 第三参历史遗留：Moonshot 等部分模型仅允许 temperature=1，传其它值会 invalid_request_error，故请求里固定为 1。 */
 async function chatJson<T>(system: string, user: string, _temperature?: number): Promise<T> {
+  void _temperature;
   const raw = await glmChat(
     [
       {

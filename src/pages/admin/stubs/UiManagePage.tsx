@@ -31,12 +31,12 @@ export default function UiManagePage() {
   const save = async () => {
     try {
       const v = await form.validateFields();
-      const lines = (v.channelsLines ?? '').split('\n').filter(Boolean);
+      const { channelsLines, ...rest } = v;
+      const lines = (channelsLines ?? '').split('\n').filter(Boolean);
       const channels = lines.map((line) => {
         const [name, channel] = line.split('|').map((s) => s.trim());
         return { name: name || '渠道', channel: channel || 'Web' };
       });
-      const { channelsLines: _c, ...rest } = v;
       await adminConfigService.updatePortalBranding(
         { ...rest, channels: channels.length ? channels : [{ name: '学校官网', channel: 'Web' }] },
         currentUser?.nickname ?? '管理员',
@@ -51,7 +51,7 @@ export default function UiManagePage() {
   return (
     <div className="min-h-full">
       <AdminPageHeader title="界面管理" subtitle="登录页欢迎语、校训、多渠道展示文案（portalBranding）" />
-      <Card loading={loading} className="rounded-xl border-outline-variant/20 shadow-[0_12px_32px_-4px_rgba(0,71,144,0.06)]">
+      <Card loading={loading} className="rounded-xl border-outline-variant/20 shadow-[0_18px_44px_rgba(16,37,60,0.09)]">
         <Form form={form} layout="vertical" className="max-w-2xl">
           <Form.Item name="loginWelcome" label="登录欢迎主标题" rules={[{ required: true }]}>
             <Input />

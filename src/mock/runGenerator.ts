@@ -9,7 +9,7 @@ import { generateReplies } from './dataGenerator';
 import { generateNotices } from './dataGenerator';
 import { generateFlowRecords } from './dataGenerator';
 import { departmentTemplates, enrichDepartmentsFromAppeals, mockUsers as existingUsers, mockAppeals as existingAppeals } from './data';
-import type { User, Department, Appeal, Reply, Notice, FlowRecord } from './types';
+import type { User, Department, Appeal } from './types';
 import * as fs from 'fs';
 import * as path from 'path';
 

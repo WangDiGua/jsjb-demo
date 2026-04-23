@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Outlet, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useAppStore } from '@/store';
 import { MobileLayoutContext } from '@/context/MobileLayoutContext';
 import MobileLayout from './Mobile/MobileLayout';

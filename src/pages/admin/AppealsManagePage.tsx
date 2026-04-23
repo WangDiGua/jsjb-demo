@@ -445,12 +445,50 @@ export default function AppealsManagePage() {
     }
   };
 
+  const queueSummary = [
+    { key: 'pending', label: '待受理', count: appeals.filter((a) => a.status === 'pending').length, icon: 'hourglass_top' },
+    { key: 'processing', label: '办理中', count: appeals.filter((a) => ['accepted', 'processing'].includes(a.status)).length, icon: 'sync' },
+    { key: 'reply_draft', label: '待审核', count: appeals.filter((a) => a.status === 'reply_draft').length, icon: 'rate_review' },
+    { key: 'replied', label: '已答复', count: appeals.filter((a) => isAppealFinished(a)).length, icon: 'task_alt' },
+  ];
+
   return (
     <div className="appeals-manage-page min-h-full">
       <AdminPageHeader title="诉求管理" subtitle="受理、转派、答复送审与审核发布" />
 
-      <main>
-        <Card className="filter-card rounded-xl border-outline-variant/20 shadow-[0_12px_32px_-4px_rgba(0,71,144,0.06)]">
+      <main className="grid gap-5 xl:grid-cols-[18rem_minmax(0,1fr)]">
+        <aside className="admin-queue-card sticky top-28 hidden self-start rounded-[2rem] p-5 xl:block">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-primary">QUEUE LANES</p>
+          <h2 className="mt-2 font-headline text-xl font-black text-on-surface">受理队列</h2>
+          <div className="mt-5 space-y-3">
+            {queueSummary.map((lane) => (
+              <button
+                key={lane.key}
+                type="button"
+                className="flex w-full items-center gap-3 rounded-2xl border border-outline-variant/30 bg-surface-container-lowest/72 px-3 py-3 text-left hover:border-primary/35"
+                onClick={() => {
+                  setStatus(lane.key === 'processing' ? 'processing' : lane.key);
+                  setPage(1);
+                }}
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <span className="material-symbols-outlined text-[20px]">{lane.icon}</span>
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-bold text-on-surface">{lane.label}</span>
+                  <span className="text-xs text-on-surface-variant">当前页 {lane.count} 件</span>
+                </span>
+                <span className="font-headline text-xl font-black text-primary">{lane.count}</span>
+              </button>
+            ))}
+          </div>
+          <Button className="mt-5 w-full rounded-2xl" onClick={() => { setStatus('all'); setPage(1); }}>
+            查看全部
+          </Button>
+        </aside>
+
+        <section className="min-w-0">
+        <Card className="filter-card rounded-[1.5rem] border-outline-variant/20 shadow-[0_18px_44px_rgba(29,79,113,0.09)]">
           <Space wrap>
             <Input.Search
               placeholder="搜索标题或内容"
@@ -483,7 +521,7 @@ export default function AppealsManagePage() {
           </Space>
         </Card>
 
-        <Card className="table-card mt-4 rounded-xl border-outline-variant/20 shadow-[0_12px_32px_-4px_rgba(0,71,144,0.06)]">
+        <Card className="table-card mt-4 rounded-[1.5rem] border-outline-variant/20 shadow-[0_18px_44px_rgba(29,79,113,0.09)]">
           <Table
             loading={loading}
             dataSource={appeals}
@@ -680,7 +718,11 @@ export default function AppealsManagePage() {
                         },
                       ]
                         .filter((item) => item.show)
-                        .map(({ show: _s, ...rest }) => rest),
+                        .map((item) => ({
+                          key: item.key,
+                          label: item.label,
+                          icon: item.icon,
+                        })),
                       onClick: ({ key }) => handleAction(record, key),
                     }}
                   >
@@ -701,6 +743,7 @@ export default function AppealsManagePage() {
             }}
           />
         </Card>
+        </section>
       </main>
 
       <Modal

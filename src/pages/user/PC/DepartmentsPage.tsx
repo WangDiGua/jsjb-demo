@@ -59,7 +59,7 @@ function DepartmentCard({ dept, compact }: { dept: DepartmentShowcaseRow; compac
 
   return (
     <article
-      className={`group relative overflow-hidden rounded-2xl border border-outline-variant/20 bg-surface-container-lowest shadow-[0_1px_3px_rgba(15,35,52,0.06)] transition-all duration-200 hover:border-primary/25 hover:shadow-[0_12px_40px_-16px_rgba(0,71,144,0.15)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.25)] dark:hover:shadow-[0_12px_40px_-16px_rgba(0,0,0,0.45)] ${compact ? 'p-4' : 'p-5 sm:p-6'}`}
+      className={`hall-counter-card group relative overflow-hidden rounded-[1.75rem] ${compact ? 'p-4' : 'p-5 pt-7 sm:p-6 sm:pt-8'}`}
     >
       <span className={`absolute bottom-3 left-0 top-3 w-1 rounded-full ${bar}`} aria-hidden />
       <div className={`relative pl-4 ${compact ? '' : 'sm:pl-5'}`}>
@@ -155,19 +155,24 @@ export default function DepartmentsPage() {
   const metadataDisplayLocale = usePreferencesStore((s) => s.metadataDisplayLocale);
   const displayDepartments = useMemo(
     () => departments.map((d) => resolveDepartmentShowcaseRow(d, metadataDisplayLocale)),
-    [departments, metadataDisplayLocale, dbTick],
+    [departments, metadataDisplayLocale],
   );
 
-  const load = useCallback(() => {
+  const load = useCallback(async () => {
     setLoading(true);
-    void departmentService.getDepartmentsForShowcase().then((d) => {
+    try {
+      const d = await departmentService.getDepartmentsForShowcase();
       setDepartments(d);
+    } finally {
       setLoading(false);
-    });
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    const id = window.setTimeout(() => {
+      void load();
+    }, 0);
+    return () => window.clearTimeout(id);
   }, [load, dbTick]);
 
   useMockDbUpdated(useCallback(() => setDbTick((n) => n + 1), []));
@@ -209,9 +214,9 @@ export default function DepartmentsPage() {
 
   return (
     <div className="w-full">
-      <header className="mb-8 border-b border-outline-variant/15 pb-8">
-        <p className="text-xs font-bold uppercase tracking-[0.12em] text-primary">服务大厅</p>
-        <h1 className="mt-2 font-headline text-3xl font-bold tracking-tight text-on-surface md:text-4xl">部门风采</h1>
+      <header className="hall-panel mb-8 rounded-[2rem] p-6 lg:p-8">
+        <p className="hall-section-label text-xs font-black">SERVICE COUNTERS</p>
+        <h1 className="mt-2 font-headline text-3xl font-black tracking-tight text-on-surface md:text-4xl">部门服务柜台</h1>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-on-surface-variant md:text-base">
           仅展示管理端已绑定风采的部门，与「部门风采管理」条目一致；更多单位请通过发起诉求页选择。
         </p>

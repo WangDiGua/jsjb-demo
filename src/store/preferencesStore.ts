@@ -11,39 +11,39 @@ export type MetadataDisplayLocale = 'zh' | 'en' | 'ja';
 
 /** 空格分隔 RGB，供 Tailwind `rgb(var(...) / <alpha-value>)` 使用 */
 export const THEME_PRESET_RGB: Record<ThemePreset, { primary: string; secondary: string }> = {
-  civic: { primary: '0 82 204', secondary: '0 163 191' },
-  ocean: { primary: '0 107 148', secondary: '0 168 204' },
-  forest: { primary: '4 120 87', secondary: '13 148 136' },
-  violet: { primary: '91 33 182', secondary: '124 58 237' },
+  civic: { primary: '40 109 153', secondary: '71 169 137' },
+  ocean: { primary: '36 124 170', secondary: '81 164 186' },
+  forest: { primary: '48 132 103', secondary: '79 175 139' },
+  violet: { primary: '93 99 166', secondary: '82 176 163' },
 };
 
 export const THEME_PRESET_HEX: Record<ThemePreset, string> = {
-  civic: '#0052CC',
-  ocean: '#006B94',
-  forest: '#047857',
-  violet: '#5B21B6',
+  civic: '#286D99',
+  ocean: '#247CAA',
+  forest: '#308467',
+  violet: '#5D63A6',
 };
 
 /** 与 THEME_PRESET_RGB 次色一致的 Hex，供 Ant Design 等非 Tailwind 场景 */
 export const THEME_SECONDARY_HEX: Record<ThemePreset, string> = {
-  civic: '#00A3BF',
-  ocean: '#00A8CC',
-  forest: '#0d9488',
-  violet: '#7c3aed',
+  civic: '#47A989',
+  ocean: '#51A4BA',
+  forest: '#4FAF8B',
+  violet: '#52B0A3',
 };
 
 const LIGHT_SURF = {
-  surface: '244 245 247',
-  onSurface: '23 43 77',
-  onSurfaceVariant: '68 84 111',
-  outlineVariant: '220 223 228',
+  surface: '245 247 241',
+  onSurface: '25 48 68',
+  onSurfaceVariant: '102 115 127',
+  outlineVariant: '202 216 213',
 };
 
 const DARK_SURF = {
-  surface: '15 23 42',
-  onSurface: '226 232 240',
-  onSurfaceVariant: '148 163 184',
-  outlineVariant: '51 65 85',
+  surface: '10 23 32',
+  onSurface: '230 240 242',
+  onSurfaceVariant: '160 179 184',
+  outlineVariant: '58 79 86',
 };
 
 const LAYOUT = {
@@ -55,21 +55,21 @@ const LAYOUT = {
 /** Material 容器阶与强调色（随明暗切换，供 Tailwind surface-container / secondary-container 等） */
 function setExtendedSurfaceTokens(root: HTMLElement, dark: boolean) {
   if (dark) {
-    root.style.setProperty('--tw-surface-container-lowest', '30 41 59');
-    root.style.setProperty('--tw-surface-container-low', '51 65 85');
-    root.style.setProperty('--tw-surface-container-high', '71 85 105');
-    root.style.setProperty('--tw-secondary-container', '96 165 250');
-    root.style.setProperty('--tw-primary-container', '59 130 246');
-    root.style.setProperty('--tw-on-primary-container', '219 234 254');
-    root.style.setProperty('--tw-page-muted', '148 163 184');
+    root.style.setProperty('--tw-surface-container-lowest', '13 31 42');
+    root.style.setProperty('--tw-surface-container-low', '20 41 52');
+    root.style.setProperty('--tw-surface-container-high', '33 61 70');
+    root.style.setProperty('--tw-secondary-container', '70 149 126');
+    root.style.setProperty('--tw-primary-container', '32 86 120');
+    root.style.setProperty('--tw-on-primary-container', '224 244 248');
+    root.style.setProperty('--tw-page-muted', '150 169 174');
   } else {
-    root.style.setProperty('--tw-surface-container-lowest', '255 255 255');
-    root.style.setProperty('--tw-surface-container-low', '242 244 246');
-    root.style.setProperty('--tw-surface-container-high', '230 232 234');
-    root.style.setProperty('--tw-secondary-container', '83 156 254');
-    root.style.setProperty('--tw-primary-container', '26 95 180');
-    root.style.setProperty('--tw-on-primary-container', '203 220 255');
-    root.style.setProperty('--tw-page-muted', '114 119 128');
+    root.style.setProperty('--tw-surface-container-lowest', '255 255 251');
+    root.style.setProperty('--tw-surface-container-low', '238 246 244');
+    root.style.setProperty('--tw-surface-container-high', '221 235 232');
+    root.style.setProperty('--tw-secondary-container', '207 236 226');
+    root.style.setProperty('--tw-primary-container', '218 237 247');
+    root.style.setProperty('--tw-on-primary-container', '23 73 101');
+    root.style.setProperty('--tw-page-muted', '116 128 136');
   }
 }
 

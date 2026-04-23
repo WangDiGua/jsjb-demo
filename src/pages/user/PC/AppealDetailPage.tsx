@@ -93,7 +93,7 @@ function DetailSection({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-outline-variant/18 bg-surface-container-lowest/85 shadow-[0_12px_42px_-22px_rgba(15,23,42,0.18)] dark:border-outline-variant/25 dark:bg-surface-container-lowest/40 dark:shadow-[0_12px_42px_-22px_rgba(0,0,0,0.5)]">
+    <section className="hall-panel rounded-[2rem]">
       <div className="flex items-start gap-3 border-b border-outline-variant/12 px-5 py-4 sm:gap-4 sm:px-6 sm:py-5">
         <span
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-[22px] text-primary material-symbols-outlined"

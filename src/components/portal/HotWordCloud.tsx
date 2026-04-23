@@ -4,10 +4,10 @@ export default function HotWordCloud({ items }: { items: { word: string; count: 
   const palette = [
     'text-primary',
     'text-secondary',
-    'text-[#0f766e] dark:text-teal-300',
-    'text-[#6d28d9] dark:text-violet-300',
-    'text-[#b45309] dark:text-amber-200',
-    'text-[#0369a1] dark:text-sky-300',
+    'text-[#1c5343] dark:text-emerald-200',
+    'text-[#5f4b32] dark:text-stone-200',
+    'text-[#9b762d] dark:text-amber-200',
+    'text-[#123f66] dark:text-blue-200',
   ];
 
   if (!items.length) {
@@ -25,7 +25,7 @@ export default function HotWordCloud({ items }: { items: { word: string; count: 
   const sorted = [...items].sort((a, b) => b.count - a.count);
 
   return (
-    <div className="relative min-h-[240px] overflow-hidden rounded-2xl border border-outline-variant/25 bg-surface dark:border-outline-variant/40">
+    <div className="relative min-h-[240px] overflow-hidden rounded-2xl border border-outline-variant/45 bg-surface-container-lowest shadow-sm dark:border-outline-variant/40">
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.55] dark:opacity-40"
         style={{

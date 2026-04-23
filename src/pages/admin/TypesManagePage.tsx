@@ -98,7 +98,7 @@ export default function TypesManagePage() {
       />
 
       <main>
-        <Card className="table-card rounded-xl border-outline-variant/20 shadow-[0_12px_32px_-4px_rgba(0,71,144,0.06)]">
+        <Card className="table-card rounded-xl border-outline-variant/20 shadow-[0_18px_44px_rgba(16,37,60,0.09)]">
           <Table
             loading={loading}
             dataSource={types}

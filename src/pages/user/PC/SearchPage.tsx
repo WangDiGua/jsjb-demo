@@ -40,7 +40,7 @@ function KpiCard({
   icon: string;
 }) {
   return (
-    <div className="rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-4 shadow-sm transition-shadow hover:shadow-md sm:p-5">
+    <div className="hall-counter-card rounded-[1.5rem] p-4 sm:p-5">
       <div className="flex items-start justify-between gap-2">
         <p className="text-xs font-bold uppercase tracking-wide text-on-surface-variant">{label}</p>
         <span className="material-symbols-outlined shrink-0 text-primary/80 text-[22px] leading-none">{icon}</span>
@@ -305,7 +305,7 @@ export default function SearchPage() {
       </section>
 
       <section className="mb-8 grid gap-6 lg:grid-cols-3">
-        <div className="rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-4 shadow-sm sm:p-6 lg:col-span-2">
+        <div className="hall-panel rounded-[2rem] p-4 sm:p-6 lg:col-span-2">
           <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
             <div>
               <h2 className="font-headline text-base font-bold text-on-surface sm:text-lg">部门办理量</h2>
@@ -323,7 +323,7 @@ export default function SearchPage() {
           )}
         </div>
 
-        <div className="rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-4 shadow-sm sm:p-6">
+        <div className="hall-panel rounded-[2rem] p-4 sm:p-6">
           <h2 className="font-headline text-base font-bold text-on-surface sm:text-lg">问题类型结构</h2>
           <p className="mt-1 text-xs text-on-surface-variant">公开办结中的类型占比</p>
           <div className="mt-5">
@@ -337,7 +337,7 @@ export default function SearchPage() {
       </section>
 
       <section className="mb-8 grid gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-4 shadow-sm sm:p-6">
+        <div className="hall-panel rounded-[2rem] p-4 sm:p-6">
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
             <div>
               <h2 className="font-headline text-base font-bold text-on-surface sm:text-lg">近 7 日动态</h2>
@@ -359,7 +359,7 @@ export default function SearchPage() {
           )}
         </div>
 
-        <div className="rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-4 shadow-sm sm:p-6">
+        <div className="hall-panel rounded-[2rem] p-4 sm:p-6">
           <h2 className="font-headline text-base font-bold text-on-surface sm:text-lg">热词与主题</h2>
           <p className="mt-1 text-xs text-on-surface-variant">由公开办结标题/正文归纳（演示数据）</p>
           <div className="mt-4 flex flex-wrap gap-2">
@@ -388,7 +388,7 @@ export default function SearchPage() {
 
   const searchControls = (
     <div
-      className={`mb-4 flex gap-3 rounded-2xl border border-outline-variant/20 bg-surface-container-lowest shadow-sm ${isMobile ? 'flex-col p-3' : 'flex-wrap p-4'}`}
+      className={`mb-4 flex gap-3 rounded-[1.5rem] border border-outline-variant/35 bg-surface-container-lowest/86 shadow-sm ${isMobile ? 'flex-col p-3' : 'flex-wrap p-4'}`}
     >
       <div
         className={`flex items-center gap-2 rounded-xl bg-surface px-4 py-3 ${isMobile ? 'w-full min-w-0' : 'min-w-[200px] flex-1'}`}
@@ -405,7 +405,7 @@ export default function SearchPage() {
       <PortalButton
         variant="primary"
         size="lg"
-        className={`font-bold shadow-primary/25 hover:shadow-lg ${isMobile ? 'w-full py-3.5' : 'px-8'}`}
+        className={`font-bold shadow-[0_12px_28px_rgba(16,37,60,0.18)] hover:shadow-lg ${isMobile ? 'w-full py-3.5' : 'px-8'}`}
         onClick={submit}
       >
         检索
@@ -415,7 +415,7 @@ export default function SearchPage() {
 
   const resultsPanel = (
     <div
-      className={`min-h-[160px] rounded-2xl border border-outline-variant/15 bg-surface-container-lowest shadow-sm ${isMobile ? 'p-4' : 'p-6'}`}
+      className={`hall-panel min-h-[160px] rounded-[2rem] ${isMobile ? 'p-4' : 'p-6'}`}
     >
       {poolHint ? (
         <p className="mb-4 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
@@ -506,9 +506,9 @@ export default function SearchPage() {
 
   return (
     <div className="w-full">
-      <header className="mb-8 border-b border-outline-variant/15 pb-8">
-        <p className="text-xs font-bold uppercase tracking-[0.12em] text-primary">数据看板</p>
-        <h1 className="mt-2 font-headline text-3xl font-bold tracking-tight text-on-surface md:text-4xl">效能看板</h1>
+      <header className="hall-panel mb-8 rounded-[2rem] p-6 lg:p-8">
+        <p className="hall-section-label text-xs font-black">EFFICIENCY OBSERVATORY</p>
+        <h1 className="mt-2 font-headline text-3xl font-black tracking-tight text-on-surface md:text-4xl">效能观察台</h1>
         <p className="mt-3 max-w-3xl text-sm leading-relaxed text-on-surface-variant md:text-base">
           基于<strong className="font-semibold text-on-surface">已公开且已答复</strong>
           的办结池做时效、部门负载与类型结构分析；与「诉求公开」列表同源，本页侧重统计与洞察，检索为辅。

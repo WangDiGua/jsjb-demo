@@ -34,7 +34,6 @@ function generateId(prefix: string, index: number): string {
 
 export function generateUsers(count: number, startIndex: number = 0): User[] {
   const users: User[] = [];
-  const roles: User['role'][] = ['student', 'teacher', 'handler', 'admin', 'dept_leader', 'leader'];
   const roleDistribution = { student: 0.55, teacher: 0.2, handler: 0.1, admin: 0.05, dept_leader: 0.05, leader: 0.05 };
   
   for (let i = 0; i < count; i++) {

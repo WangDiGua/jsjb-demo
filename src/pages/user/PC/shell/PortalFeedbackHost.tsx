@@ -7,22 +7,22 @@ const toastStyle: Record<
   { bar: string; icon: string; iconName: string }
 > = {
   success: {
-    bar: 'border-l-success bg-surface-container-lowest/95 border border-outline-variant/20 text-on-surface shadow-lg shadow-black/5',
+    bar: 'border-l-success bg-surface-container-lowest/95 border border-outline-variant/45 text-on-surface shadow-[0_18px_44px_rgba(16,37,60,0.12)]',
     icon: 'bg-success/15 text-success',
     iconName: 'check_circle',
   },
   error: {
-    bar: 'border-l-red-500 bg-surface-container-lowest/95 border border-red-100 text-on-surface shadow-lg shadow-red-900/10',
+    bar: 'border-l-red-500 bg-surface-container-lowest/95 border border-red-100 text-on-surface shadow-[0_18px_44px_rgba(90,30,24,0.14)]',
     icon: 'bg-red-50 text-red-600',
     iconName: 'error',
   },
   info: {
-    bar: 'border-l-primary bg-surface-container-lowest/95 border border-primary/15 text-on-surface shadow-lg shadow-primary/10',
+    bar: 'border-l-primary bg-surface-container-lowest/95 border border-primary/20 text-on-surface shadow-[0_18px_44px_rgba(16,37,60,0.12)]',
     icon: 'bg-primary/10 text-primary',
     iconName: 'info',
   },
   warning: {
-    bar: 'border-l-accent bg-surface-container-lowest/95 border border-accent/25 text-on-surface shadow-lg shadow-amber-900/5',
+    bar: 'border-l-accent bg-surface-container-lowest/95 border border-accent/30 text-on-surface shadow-[0_18px_44px_rgba(96,65,12,0.12)]',
     icon: 'bg-accent/15 text-amber-900',
     iconName: 'warning',
   },

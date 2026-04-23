@@ -9,23 +9,23 @@ import {
 
 /** Tailwind 语义色变量对应的 RGB 值（与 preferencesStore 同步） */
 const TW_LIGHT_TOKENS = {
-  surface: 'rgb(244 245 247)',
-  surfaceContainerLowest: 'rgb(255 255 255)',
-  surfaceContainerLow: 'rgb(242 244 246)',
-  surfaceContainerHigh: 'rgb(230 232 234)',
-  onSurface: 'rgb(23 43 77)',
-  onSurfaceVariant: 'rgb(68 84 111)',
-  outlineVariant: 'rgb(220 223 228)',
+  surface: 'rgb(245 247 241)',
+  surfaceContainerLowest: 'rgb(255 255 251)',
+  surfaceContainerLow: 'rgb(238 246 244)',
+  surfaceContainerHigh: 'rgb(221 235 232)',
+  onSurface: 'rgb(25 48 68)',
+  onSurfaceVariant: 'rgb(102 115 127)',
+  outlineVariant: 'rgb(202 216 213)',
 } as const;
 
 const TW_DARK_TOKENS = {
-  surface: 'rgb(15 23 42)',
-  surfaceContainerLowest: 'rgb(30 41 59)',
-  surfaceContainerLow: 'rgb(51 65 85)',
-  surfaceContainerHigh: 'rgb(71 85 105)',
-  onSurface: 'rgb(226 232 240)',
-  onSurfaceVariant: 'rgb(148 163 184)',
-  outlineVariant: 'rgb(51 65 85)',
+  surface: 'rgb(10 23 32)',
+  surfaceContainerLowest: 'rgb(13 31 42)',
+  surfaceContainerLow: 'rgb(20 41 52)',
+  surfaceContainerHigh: 'rgb(33 61 70)',
+  onSurface: 'rgb(230 240 242)',
+  onSurfaceVariant: 'rgb(160 179 184)',
+  outlineVariant: 'rgb(58 79 86)',
 } as const;
 
 /** Ant Design 与个性化主色 / 明暗同步，避免卡片与门户 Tailwind 割裂 */
@@ -468,7 +468,7 @@ export function buildAntdTheme(preset: ThemePreset, dark: boolean): ThemeConfig 
           itemSelectedBg: 'rgb(51 65 85)',
           itemActiveBg: 'rgb(71 85 105)',
         },
-      } as any,
+      } as ThemeConfig['components'],
     };
   }
 
@@ -480,13 +480,13 @@ export function buildAntdTheme(preset: ThemePreset, dark: boolean): ThemeConfig 
       colorBgContainer: TW_LIGHT_TOKENS.surfaceContainerLowest,
       colorBgElevated: TW_LIGHT_TOKENS.surfaceContainerLowest,
       colorBorder: TW_LIGHT_TOKENS.outlineVariant,
-      colorBorderSecondary: 'rgb(230 232 236)',
+      colorBorderSecondary: 'rgb(202 216 213)',
       colorText: TW_LIGHT_TOKENS.onSurface,
       colorTextSecondary: TW_LIGHT_TOKENS.onSurfaceVariant,
-      colorFill: 'rgb(242 244 246)',
-      colorFillSecondary: 'rgb(230 232 234)',
-      colorFillTertiary: 'rgb(220 223 228)',
-      colorFillQuaternary: 'rgb(244 245 247)',
+      colorFill: 'rgb(238 246 244)',
+      colorFillSecondary: 'rgb(221 235 232)',
+      colorFillTertiary: 'rgb(202 216 213)',
+      colorFillQuaternary: 'rgb(245 247 241)',
     },
     components: {
       Button: {
@@ -495,7 +495,7 @@ export function buildAntdTheme(preset: ThemePreset, dark: boolean): ThemeConfig 
         defaultBorderColor: TW_LIGHT_TOKENS.outlineVariant,
         defaultHoverBg: TW_LIGHT_TOKENS.surfaceContainerLow,
         defaultHoverColor: TW_LIGHT_TOKENS.onSurface,
-        defaultHoverBorderColor: 'rgb(200 203 208)',
+        defaultHoverBorderColor: 'rgb(71 169 137)',
         primaryColor: '#ffffff',
         textTextColor: TW_LIGHT_TOKENS.onSurface,
         textTextHoverColor: colorPrimary,
@@ -504,7 +504,7 @@ export function buildAntdTheme(preset: ThemePreset, dark: boolean): ThemeConfig 
         colorBgContainer: TW_LIGHT_TOKENS.surfaceContainerLowest,
         colorBorder: TW_LIGHT_TOKENS.outlineVariant,
         colorText: TW_LIGHT_TOKENS.onSurface,
-        colorTextPlaceholder: 'rgb(114 119 128)',
+        colorTextPlaceholder: 'rgb(85 113 131)',
         hoverBorderColor: colorPrimary,
         activeBorderColor: colorPrimary,
         activeShadow: `0 0 0 2px ${colorPrimary}20`,
@@ -515,9 +515,9 @@ export function buildAntdTheme(preset: ThemePreset, dark: boolean): ThemeConfig 
         colorBgElevated: TW_LIGHT_TOKENS.surfaceContainerLowest,
         colorBorder: TW_LIGHT_TOKENS.outlineVariant,
         colorText: TW_LIGHT_TOKENS.onSurface,
-        colorTextPlaceholder: 'rgb(114 119 128)',
-        optionSelectedBg: 'rgb(230 232 234)',
-        optionActiveBg: 'rgb(242 244 246)',
+        colorTextPlaceholder: 'rgb(85 113 131)',
+        optionSelectedBg: 'rgb(238 246 244)',
+        optionActiveBg: 'rgb(245 247 241)',
         selectorBg: TW_LIGHT_TOKENS.surfaceContainerLowest,
         hoverBorderColor: colorPrimary,
         activeBorderColor: colorPrimary,
@@ -528,9 +528,9 @@ export function buildAntdTheme(preset: ThemePreset, dark: boolean): ThemeConfig 
         headerColor: TW_LIGHT_TOKENS.onSurface,
         headerSortActiveBg: TW_LIGHT_TOKENS.surfaceContainerHigh,
         headerSortHoverBg: TW_LIGHT_TOKENS.surfaceContainerLow,
-        rowHoverBg: 'rgb(242 244 246)',
-        rowSelectedBg: 'rgb(230 232 234)',
-        rowSelectedHoverBg: 'rgb(220 223 228)',
+        rowHoverBg: 'rgb(245 247 241)',
+        rowSelectedBg: 'rgb(238 246 244)',
+        rowSelectedHoverBg: 'rgb(221 235 232)',
         bodySortBg: TW_LIGHT_TOKENS.surfaceContainerLow,
         borderColor: TW_LIGHT_TOKENS.outlineVariant,
         headerSplitColor: TW_LIGHT_TOKENS.outlineVariant,
@@ -702,6 +702,6 @@ export function buildAntdTheme(preset: ThemePreset, dark: boolean): ThemeConfig 
         itemHoverBg: TW_LIGHT_TOKENS.surfaceContainerLow,
         itemSelectedBg: TW_LIGHT_TOKENS.surfaceContainerHigh,
       },
-    } as any,
+    } as ThemeConfig['components'],
   };
 }

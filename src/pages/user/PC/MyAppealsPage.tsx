@@ -104,9 +104,9 @@ export default function MyAppealsPage() {
   ];
 
   const guest = (
-    <div className="rounded-2xl border border-outline-variant/15 bg-surface-container-lowest py-12 text-center shadow-sm sm:py-16">
+    <div className="hall-panel rounded-[2rem] py-12 text-center sm:py-16">
       <p className="mb-6 px-4 text-on-surface-variant">登录后可查看与管理您提交的诉求。</p>
-      <PortalButton variant="primary" size="lg" className="font-bold shadow-primary/25" onClick={() => navigate('/user/login')}>
+      <PortalButton variant="primary" size="lg" className="font-bold shadow-[0_12px_28px_rgba(16,37,60,0.18)]" onClick={() => navigate('/user/login')}>
         去登录
       </PortalButton>
     </div>
@@ -121,7 +121,7 @@ export default function MyAppealsPage() {
             type="button"
             className={`shrink-0 rounded-[0.65rem] px-3.5 py-2 text-[13px] font-semibold transition-all active:scale-[0.98] ${
               tab === t.key
-                ? 'bg-primary text-white shadow-sm shadow-primary/25'
+                ? 'bg-primary text-white shadow-sm shadow-[0_12px_28px_rgba(16,37,60,0.18)]'
                 : 'text-on-surface-variant hover:bg-on-surface/[0.04] dark:hover:bg-white/[0.06]'
             }`}
             onClick={() => setTab(t.key)}
@@ -132,13 +132,13 @@ export default function MyAppealsPage() {
       </div>
     </div>
   ) : (
-    <div className="mb-6 flex flex-wrap gap-2 rounded-2xl border border-outline-variant/20 bg-surface-container-lowest p-2">
+    <div className="mb-6 flex flex-wrap gap-2 rounded-[1.5rem] border border-outline-variant/35 bg-surface-container-low p-2">
       {tabs.map((t) => (
         <button
           key={t.key}
           type="button"
           className={`rounded-xl px-4 py-2 text-sm font-bold transition-all ${
-            tab === t.key ? 'bg-primary text-white shadow-md' : 'text-on-surface-variant hover:bg-surface'
+            tab === t.key ? 'bg-primary text-white shadow-md' : 'text-on-surface-variant hover:bg-surface-container-lowest'
           }`}
           onClick={() => setTab(t.key)}
         >
@@ -151,7 +151,7 @@ export default function MyAppealsPage() {
   const list = (
     <div
       className={
-        isMobile ? 'space-y-3' : 'overflow-hidden rounded-2xl border border-outline-variant/15 bg-surface-container-lowest shadow-sm'
+        isMobile ? 'space-y-3' : 'hall-panel overflow-hidden rounded-[2rem]'
       }
     >
         {loading ? (
@@ -313,7 +313,11 @@ export default function MyAppealsPage() {
     }
     return (
       <div className="w-full">
-        <h1 className="mb-8 font-headline text-3xl font-bold text-on-surface">我的诉求</h1>
+        <header className="hall-panel mb-8 rounded-[2rem] p-6">
+          <p className="hall-section-label text-xs font-black">MY DOCKET</p>
+          <h1 className="mt-2 font-headline text-3xl font-black text-on-surface">我的办件台账</h1>
+          <p className="mt-2 text-sm text-on-surface-variant">登录后查看您提交的诉求进度、回复和消息提醒。</p>
+        </header>
         {guest}
       </div>
     );
@@ -330,7 +334,11 @@ export default function MyAppealsPage() {
 
   return (
     <div className="w-full">
-      <h1 className="mb-8 font-headline text-3xl font-bold text-on-surface">我的诉求</h1>
+      <header className="hall-panel mb-8 rounded-[2rem] p-6">
+        <p className="hall-section-label text-xs font-black">MY DOCKET</p>
+        <h1 className="mt-2 font-headline text-3xl font-black text-on-surface">我的办件台账</h1>
+        <p className="mt-2 text-sm text-on-surface-variant">按状态分拣您的诉求，撤销、删除和详情查看仍使用原有逻辑。</p>
+      </header>
       {tabBar}
       {list}
     </div>

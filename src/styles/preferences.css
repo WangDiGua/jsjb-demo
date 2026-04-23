@@ -3,19 +3,19 @@
  * Tailwind 语义色引用 --tw-color-*
  */
 :root {
-  --tw-color-primary: 0 82 204;
-  --tw-color-secondary: 0 163 191;
-  --tw-color-surface: 244 245 247;
-  --tw-color-on-surface: 23 43 77;
-  --tw-color-on-surface-variant: 68 84 111;
-  --tw-color-outline-variant: 220 223 228;
-  --tw-surface-container-lowest: 255 255 255;
-  --tw-surface-container-low: 242 244 246;
-  --tw-surface-container-high: 230 232 234;
-  --tw-secondary-container: 83 156 254;
-  --tw-primary-container: 26 95 180;
-  --tw-on-primary-container: 203 220 255;
-  --tw-page-muted: 114 119 128;
+  --tw-color-primary: 40 109 153;
+  --tw-color-secondary: 71 169 137;
+  --tw-color-surface: 245 247 241;
+  --tw-color-on-surface: 25 48 68;
+  --tw-color-on-surface-variant: 102 115 127;
+  --tw-color-outline-variant: 202 216 213;
+  --tw-surface-container-lowest: 255 255 251;
+  --tw-surface-container-low: 238 246 244;
+  --tw-surface-container-high: 221 235 232;
+  --tw-secondary-container: 207 236 226;
+  --tw-primary-container: 218 237 247;
+  --tw-on-primary-container: 23 73 101;
+  --tw-page-muted: 116 128 136;
   --layout-max: 1600px;
   --layout-px: 2rem;
   --layout-py-main: 2.5rem;

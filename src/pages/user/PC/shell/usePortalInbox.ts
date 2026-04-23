@@ -27,13 +27,18 @@ export function usePortalInbox() {
     } catch (e) {
       portalToast.error(e instanceof Error ? e.message : '消息加载失败');
     }
-  }, [currentUser?.id]);
+  }, [currentUser]);
 
   useEffect(() => {
-    void refreshInbox();
+    const id = window.setTimeout(() => {
+      void refreshInbox();
+    }, 0);
     const fn = () => void refreshInbox();
     window.addEventListener('jsjb-mock-updated', fn);
-    return () => window.removeEventListener('jsjb-mock-updated', fn);
+    return () => {
+      window.clearTimeout(id);
+      window.removeEventListener('jsjb-mock-updated', fn);
+    };
   }, [refreshInbox]);
 
   const openInboxItem = async (item: InboxItem) => {

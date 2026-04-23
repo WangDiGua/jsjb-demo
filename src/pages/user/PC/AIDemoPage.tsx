@@ -209,7 +209,7 @@ export default function AIDemoPage() {
 
   const pageIntro = (
     <div
-      className={`rounded-2xl border border-outline-variant/25 bg-surface-container-low p-4 shadow-sm dark:border-outline-variant/45 ${isMobile ? 'mb-3' : 'mb-6'}`}
+      className={`hall-panel rounded-[2rem] p-4 dark:border-outline-variant/45 ${isMobile ? 'mb-3' : 'mb-6'}`}
     >
       <div className="flex flex-wrap items-center gap-3 sm:gap-4">
         <PortalButton variant="link" size="md" className="shrink-0 p-0 text-sm font-bold text-primary" onClick={() => navigate(-1)}>
@@ -236,7 +236,7 @@ export default function AIDemoPage() {
 
   const chatPanel = (
     <div
-      className={`flex min-h-0 flex-col overflow-hidden rounded-3xl border border-outline-variant/20 bg-surface shadow-[0_24px_80px_-32px_rgba(15,35,52,0.35)] dark:shadow-[0_24px_80px_-32px_rgba(0,0,0,0.5)] ${isMobile ? 'h-[min(72vh,540px)]' : 'h-[min(76vh,640px)]'}`}
+      className={`hall-panel flex min-h-0 flex-col overflow-hidden rounded-[2rem] ${isMobile ? 'h-[min(72vh,540px)]' : 'h-[min(76vh,640px)]'}`}
     >
       <div className="shrink-0 border-b border-outline-variant/20 bg-surface-container-low/60 px-4 py-2.5 sm:px-5 dark:bg-surface-container/40">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -365,7 +365,7 @@ export default function AIDemoPage() {
               variant="primary"
               size="lg"
               disabled={chatLoading || !composerText.trim()}
-              className="order-1 w-full rounded-xl px-6 font-extrabold shadow-md shadow-primary/20 sm:order-2 sm:w-auto sm:min-w-[6.5rem]"
+              className="order-1 w-full rounded-xl px-6 font-extrabold shadow-md shadow-[0_12px_28px_rgba(16,37,60,0.18)] sm:order-2 sm:w-auto sm:min-w-[6.5rem]"
               onClick={() => {
                 void runChatStream(composerText);
                 setComposerText('');
@@ -407,7 +407,16 @@ export default function AIDemoPage() {
   return (
     <div className="relative z-10 w-full font-body">
       {pageIntro}
-      {chatPanel}
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_18rem]">
+        <div className="min-w-0">{chatPanel}</div>
+        <aside className="hall-panel hidden rounded-[2rem] p-5 xl:block">
+          <p className="hall-section-label text-xs font-black">HELP DESK</p>
+          <h2 className="mt-2 font-headline text-xl font-black text-on-surface">咨询台说明</h2>
+          <p className="mt-3 text-sm leading-relaxed text-on-surface-variant">
+            这里负责政策与办事指引问答；需要正式提交事项时，可把回答带入发起诉求页面。
+          </p>
+        </aside>
+      </div>
     </div>
   );
 }

@@ -104,9 +104,11 @@ export default function DashboardPage() {
 
   return (
     <div className="admin-dashboard font-body">
-      <header className="mb-10 flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
+      <header className="admin-command-card mb-8 rounded-[2rem] p-6 lg:p-8">
+        <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
         <div>
-          <h2 className="font-headline text-3xl font-bold tracking-tight text-on-surface">接诉即办数字化工作台</h2>
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-primary">OPERATIONS CONTROL ROOM</p>
+          <h2 className="mt-2 font-headline text-3xl font-black tracking-tight text-on-surface">综合受理指挥台</h2>
           <p className="mt-1 text-on-surface-variant">受理、交办、督办与质效分析统一视图</p>
         </div>
         <div className="flex flex-wrap items-center gap-4">
@@ -116,11 +118,12 @@ export default function DashboardPage() {
           </div>
           <button
             type="button"
-            className="rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white shadow-md shadow-primary/20 transition-colors hover:bg-primary/90"
+            className="rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white shadow-md shadow-[0_12px_28px_rgba(16,37,60,0.18)] transition-colors hover:bg-primary/90"
             onClick={() => navigate('/admin/statistics')}
           >
             查看统计报表
           </button>
+        </div>
         </div>
       </header>
 
@@ -171,7 +174,7 @@ export default function DashboardPage() {
         ).map((kpi) => (
           <div
             key={kpi.key}
-            className="rounded-xl border border-outline-variant/15 bg-surface-container-lowest p-6 admin-custom-shadow dark:bg-surface-container-lowest"
+            className="admin-queue-card rounded-[1.6rem] p-6"
           >
             <div className="mb-4 flex items-center justify-between">
               <span
@@ -199,7 +202,7 @@ export default function DashboardPage() {
       </section>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-        <div className="rounded-xl border border-outline-variant/15 bg-surface-container-lowest p-8 admin-custom-shadow dark:bg-surface-container-lowest lg:col-span-2">
+        <div className="admin-queue-card rounded-[2rem] p-8 lg:col-span-2">
           <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <span className="material-symbols-outlined rounded-xl bg-primary/10 p-2 text-primary">bar_chart</span>
@@ -234,7 +237,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-outline-variant/15 bg-surface-container-lowest p-8 admin-custom-shadow dark:bg-surface-container-lowest">
+        <div className="admin-queue-card rounded-[2rem] p-8">
           <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <span className="material-symbols-outlined rounded-xl bg-primary/10 p-2 text-primary">bubble_chart</span>
@@ -286,7 +289,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-outline-variant/15 bg-surface-container-lowest p-8 admin-custom-shadow dark:bg-surface-container-lowest lg:col-span-1">
+        <div className="admin-queue-card rounded-[2rem] p-8 lg:col-span-1">
           <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <span className="material-symbols-outlined rounded-xl bg-primary/10 p-2 text-primary">assignment_late</span>
@@ -330,7 +333,7 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-outline-variant/15 bg-surface-container-lowest p-8 admin-custom-shadow dark:bg-surface-container-lowest lg:col-span-2">
+        <div className="admin-queue-card overflow-hidden rounded-[2rem] p-8 lg:col-span-2">
           <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <span className="material-symbols-outlined rounded-xl bg-primary/10 p-2 text-primary">table_rows</span>
@@ -395,7 +398,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-outline-variant/15 bg-surface-container-lowest p-8 admin-custom-shadow dark:bg-surface-container-lowest lg:col-span-1">
+        <div className="admin-queue-card rounded-[2rem] p-8 lg:col-span-1">
           <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <span className="material-symbols-outlined rounded-xl bg-secondary/10 p-2 text-secondary">speed</span>

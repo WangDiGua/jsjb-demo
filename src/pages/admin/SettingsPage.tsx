@@ -142,7 +142,7 @@ export default function SettingsPage() {
                   children: (
                     <Card
                       title="平台基础设置"
-                      className="settings-card rounded-xl border-outline-variant/20 shadow-[0_12px_32px_-4px_rgba(0,71,144,0.06)]"
+                      className="settings-card rounded-xl border-outline-variant/20 shadow-[0_18px_44px_rgba(16,37,60,0.09)]"
                     >
                       <Form.Item name={['basic', 'platformName']} label="平台名称" rules={[{ required: true, message: '请填写平台名称' }]}>
                         <Input placeholder="请输入平台名称" />
@@ -201,7 +201,7 @@ export default function SettingsPage() {
                   children: (
                     <Card
                       title="超时与提醒（演示：数值持久化；业务超时逻辑可后续对接调度任务）"
-                      className="settings-card rounded-xl border-outline-variant/20 shadow-[0_12px_32px_-4px_rgba(0,71,144,0.06)]"
+                      className="settings-card rounded-xl border-outline-variant/20 shadow-[0_18px_44px_rgba(16,37,60,0.09)]"
                     >
                       <Form.Item
                         name={['timeouts', 'urgeTimeoutHours']}
@@ -240,7 +240,7 @@ export default function SettingsPage() {
                   children: (
                     <Card
                       title="敏感词管理"
-                      className="settings-card rounded-xl border-outline-variant/20 shadow-[0_12px_32px_-4px_rgba(0,71,144,0.06)]"
+                      className="settings-card rounded-xl border-outline-variant/20 shadow-[0_18px_44px_rgba(16,37,60,0.09)]"
                     >
                       <Typography.Paragraph type="secondary" className="!mb-4 text-sm">
                         列表在内存中编辑后，需点击顶部「保存设置」与系统配置一并写入本地演示库；提交诉求时会优先匹配此处词库。
@@ -312,7 +312,7 @@ export default function SettingsPage() {
                   children: (
                     <Card
                       title="通知公告设置"
-                      className="settings-card rounded-xl border-outline-variant/20 shadow-[0_12px_32px_-4px_rgba(0,71,144,0.06)]"
+                      className="settings-card rounded-xl border-outline-variant/20 shadow-[0_18px_44px_rgba(16,37,60,0.09)]"
                     >
                       <Form.Item name={['notices', 'enabled']} label="启用公告功能" valuePropName="checked">
                         <Switch />
@@ -339,7 +339,7 @@ export default function SettingsPage() {
                   children: (
                     <Card
                       title="AI智能设置"
-                      className="settings-card rounded-xl border-outline-variant/20 shadow-[0_12px_32px_-4px_rgba(0,71,144,0.06)]"
+                      className="settings-card rounded-xl border-outline-variant/20 shadow-[0_18px_44px_rgba(16,37,60,0.09)]"
                     >
                       <Form.Item name={['ai', 'smartDispatch']} label="启用AI智能分派（部门/类型大模型推断）" valuePropName="checked">
                         <Switch />
@@ -372,7 +372,7 @@ export default function SettingsPage() {
                   children: (
                     <Card
                       title="全局元数据多语言"
-                      className="settings-card rounded-xl border-outline-variant/20 shadow-[0_12px_32px_-4px_rgba(0,71,144,0.06)]"
+                      className="settings-card rounded-xl border-outline-variant/20 shadow-[0_18px_44px_rgba(16,37,60,0.09)]"
                       extra={<TranslationOutlined className="text-primary" />}
                     >
                       <Space direction="vertical" size="middle" className="w-full">
@@ -437,7 +437,7 @@ export default function SettingsPage() {
                   children: (
                     <Card
                       title="系统管理"
-                      className="settings-card rounded-xl border-outline-variant/20 shadow-[0_12px_32px_-4px_rgba(0,71,144,0.06)]"
+                      className="settings-card rounded-xl border-outline-variant/20 shadow-[0_18px_44px_rgba(16,37,60,0.09)]"
                     >
                       <Typography.Paragraph className="text-on-surface-variant">
                         以下为演示环境已有管理入口的快捷跳转。数据均保存在本机 IndexedDB / localStorage。
@@ -485,7 +485,7 @@ export default function SettingsPage() {
           padding: 12px 14px;
           border-radius: 12px;
           border: 1px solid rgb(var(--tw-color-outline-variant) / 0.4);
-          background: rgb(var(--tw-color-surface-container-lowest) / 0.65);
+          background: rgb(var(--tw-surface-container-lowest) / 0.65);
         }
         .sensitive-words .word-chips-empty { display: block; width: 100%; text-align: center; padding: 8px 0; }
         .sensitive-words :global(.sensitive-word-chip) { margin: 0 !important; padding-inline: 10px 6px; line-height: 26px; }

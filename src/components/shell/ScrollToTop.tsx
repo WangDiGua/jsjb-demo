@@ -15,11 +15,11 @@ export default function ScrollToTop({ scrollContainerRef }: ScrollToTopProps) {
   useLayoutEffect(() => {
     const el = scrollContainerRef?.current;
     if (el) {
-      el.scrollTop = 0;
+      el.scrollTo({ top: 0, left: 0 });
     }
     window.scrollTo(0, 0);
     document.documentElement.scrollTop = 0;
-  }, [pathname, search]);
+  }, [pathname, search, scrollContainerRef]);
 
   return null;
 }

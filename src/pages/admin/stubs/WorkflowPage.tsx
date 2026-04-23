@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Card, Table, Button, Space, Modal, Form, Input, InputNumber, Select, message } from 'antd';
+import { Card, Table, Button, Modal, Form, Input, InputNumber, Select, message } from 'antd';
 import { PlusOutlined, EditOutlined } from '@ant-design/icons';
 import { adminConfigService } from '@/mock/adminConfigService';
 import type { WorkflowNode, WorkflowNodeKind } from '@/mock/adminConfigTypes';
@@ -49,7 +49,7 @@ export default function WorkflowPage() {
       const v = await form.validateFields();
       const nextIds = typeof v.nextIds === 'string' ? (v.nextIds as string).split(',').map((s) => s.trim()).filter(Boolean) : v.nextIds;
       const node: WorkflowNode = { ...v, nextIds: nextIds as string[] };
-      let next = [...rows];
+      const next = [...rows];
       const i = next.findIndex((x) => x.id === node.id);
       if (i >= 0) next[i] = node;
       else next.push(node);
@@ -86,7 +86,7 @@ export default function WorkflowPage() {
           </Button>
         }
       />
-      <Card className="rounded-xl border-outline-variant/20 shadow-[0_12px_32px_-4px_rgba(0,71,144,0.06)]">
+      <Card className="rounded-xl border-outline-variant/20 shadow-[0_18px_44px_rgba(16,37,60,0.09)]">
         <Table
           loading={loading}
           rowKey="id"

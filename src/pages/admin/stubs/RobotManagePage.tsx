@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Card, Table, Button, Space, Modal, Form, Input, InputNumber, Switch, Select, message } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { adminConfigService } from '@/mock/adminConfigService';
 import type { ChatbotProfile } from '@/mock/adminConfigTypes';
 import { useAppStore } from '@/store';
@@ -31,11 +31,11 @@ export default function RobotManagePage() {
   const onSubmit = async () => {
     try {
       const v = await form.validateFields();
-      const kb = (v.kbIdsText ?? '')
+      const { kbIdsText, ...rest } = v;
+      const kb = (kbIdsText ?? '')
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean);
-      const { kbIdsText: _k, ...rest } = v;
       const row: ChatbotProfile = {
         ...(rest as ChatbotProfile),
         linkedKbIds: kb.length ? kb : [],
@@ -53,7 +53,7 @@ export default function RobotManagePage() {
   return (
     <div className="min-h-full">
       <AdminPageHeader title="机器人管理" subtitle="引导机器人环境、意图规模与绑定知识库 ID" />
-      <Card className="rounded-xl border-outline-variant/20 shadow-[0_12px_32px_-4px_rgba(0,71,144,0.06)]">
+      <Card className="rounded-xl border-outline-variant/20 shadow-[0_18px_44px_rgba(16,37,60,0.09)]">
         <Table
           loading={loading}
           rowKey="id"
