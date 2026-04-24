@@ -129,12 +129,35 @@
   line-height: 1.75rem !important;
   font-weight: 500;
   font-size: 0.875rem;
-  color: rgb(var(--tw-color-on-surface) / 1);
+  color: rgb(var(--tw-color-on-surface) / 1) !important;
+  opacity: 1 !important;
+}
+
+.portal-select-antd.ant-select .ant-select-content,
+.portal-select-antd.ant-select .ant-select-content-value,
+.portal-select-antd.ant-select .portal-select-value {
+  color: rgb(var(--tw-color-on-surface) / 1) !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: rgb(var(--tw-color-on-surface) / 1) !important;
+}
+
+.portal-select-antd.ant-select .ant-select-content-has-value {
+  color: rgb(var(--tw-color-on-surface) / 1) !important;
 }
 
 .portal-select-antd.ant-select .ant-select-selection-placeholder {
   color: rgb(var(--tw-color-on-surface-variant) / 0.82) !important;
   font-weight: 500;
+  opacity: 1 !important;
+}
+
+.portal-select-antd.ant-select .ant-select-selection-search-input {
+  color: rgb(var(--tw-color-on-surface) / 1) !important;
+}
+
+.portal-select-antd.ant-select .ant-select-selection-item-remove,
+.portal-select-antd.ant-select .ant-select-clear {
+  color: rgb(var(--tw-color-on-surface-variant) / 0.85) !important;
 }
 
 .portal-select-antd.ant-select:not(.ant-select-disabled):hover .ant-select-selector {
@@ -152,7 +175,7 @@
 }
 
 .portal-select-antd .ant-select-arrow {
-  color: rgb(var(--tw-color-on-surface-variant) / 0.85);
+  color: rgb(var(--tw-color-on-surface-variant) / 0.85) !important;
 }
 
 .portal-select-dropdown.ant-select-dropdown {
@@ -170,6 +193,7 @@
   min-height: 44px !important;
   line-height: 1.45 !important;
   font-size: 0.875rem;
+  color: rgb(var(--tw-color-on-surface) / 1) !important;
 }
 
 .portal-select-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
